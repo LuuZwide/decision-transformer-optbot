@@ -1,0 +1,27 @@
+# Python cache / compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# WandB logs and runs
+wandb/
+*.wandb
+
+# Debug logs
+debug.log
+debug-internal.log
+debug-core.log
+
+# Offline wandb runs (just in case nested)
+wandb/offline-run-*/
+
+# Temporary / run artifacts
+latest-run/
+
+# Dataset files (if you don't want to version them)
+*.pkl
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
