@@ -5,6 +5,8 @@ dependencies:
   - pip:
     - gym
     - numpy==2.0.2
+    - wandb
+    - optuna
     - stable-baselines3>=1.1.0
     - tensorboard>=2.5.0
     - torch>=1.8.1
