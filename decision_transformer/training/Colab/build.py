@@ -9,10 +9,10 @@ def build_env():
     df_charts = {}
 
     # build charts
-    for file in os.listdir("/opt/decision-transformer-optbot/decision_transformer/training/Colab/datafiles"):
+    for file in os.listdir("/home/lnxumalo/lustre/Experiment04/odt_sand/opt/decision-transformer-optbot/decision_transformer/training/Colab/datafiles"):
         if file.endswith(".pkl"):
             symbol = file.replace(".pkl", "")
-            df_charts[symbol] = pd.read_pickle(os.path.join("/opt/decision-transformer-optbot/decision_transformer/training/Colab/datafiles", file))
+            df_charts[symbol] = pd.read_pickle(os.path.join("/home/lnxumalo/lustre/Experiment04/odt_sand/opt/decision-transformer-optbot/decision_transformer/training/Colab/datafiles", file))
     
     #for symbol in df_charts.keys():
     #    print(symbol,df_charts[symbol].shape)
