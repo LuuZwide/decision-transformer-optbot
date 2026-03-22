@@ -262,7 +262,7 @@ def experiment(
         model = model.to(device=device)
 
         warmup_steps = variant['warmup_steps']
-        optimizer = torch.optim.AdamW(
+        optimizer = torch.optim.AdamW( # type: ignore
         model.parameters(),
         lr=variant['learning_rate'],
         weight_decay=variant['weight_decay'],
@@ -362,7 +362,7 @@ def experiment(
     model = model.to(device=device)
 
     warmup_steps = variant['warmup_steps']
-    optimizer = torch.optim.AdamW(
+    optimizer = torch.optim.AdamW( # type: ignore
         model.parameters(),
         lr=variant['learning_rate'],
         weight_decay=variant['weight_decay'],
