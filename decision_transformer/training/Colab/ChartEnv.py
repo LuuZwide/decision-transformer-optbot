@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
-import gymnasium as gym
-from gymnasium import spaces
+import gym
+from gym import spaces
 import random
 from decision_transformer.training.Colab.portfolio import portfolio
 
