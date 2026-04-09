@@ -4,6 +4,8 @@ __pycache__/
 *.pyo
 *.pyd
 
+decision_transformer/training/Colab/datafiles/
+
 # WandB logs and runs
 wandb/
 *.wandb
@@ -13,8 +15,12 @@ debug.log
 debug-internal.log
 debug-core.log
 
+data/
+
 # Offline wandb runs (just in case nested)
 wandb/offline-run-*/
+
+saved_models/*
 
 # Temporary / run artifacts
 latest-run/

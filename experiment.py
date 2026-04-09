@@ -13,14 +13,14 @@ from decision_transformer.models.decision_transformer import DecisionTransformer
 from decision_transformer.models.mlp_bc import MLPBCModel
 from decision_transformer.training.act_trainer import ActTrainer
 from decision_transformer.training.seq_trainer import SequenceTrainer
-from decision_transformer.training.Colab import build
+from decision_transformer.training.Colab import ChartEnv, build
 
 os.environ["WANDB_MODE"] = "offline"
-train_env, test_env = build.build_env()
+env_charts, env_close_prices, env_test_charts, env_close_test_prices = build.build_charts()
 
 max_ep_len = 1000
-scale = 1
-env_targets = [0.05, 0.1]
+scale = 1.0
+env_targets = [3.0, 6.0]
 
 """
     tags used to define and separate different experiments
@@ -38,6 +38,13 @@ def discount_cumsum(x, gamma):
         discount_cumsum[t] = x[t] + gamma * discount_cumsum[t+1]
     return discount_cumsum
 
+def save_model(model, path):
+    #if path does not exist create it
+    if not os.path.exists(os.path.dirname(path)):
+        os.makedirs(os.path.dirname(path))
+
+    torch.save(model.state_dict(), path)
+    print(f"Model saved to {path}")
 
 def experiment(
         project_name,
@@ -51,8 +58,8 @@ def experiment(
     model_type = variant['model_type']
     experiment_name = f'DT_{env_name}-{variant["loss_outputs"]}'
 
-    state_dim = 20
-    act_dim = 3
+    state_dim = 26
+    act_dim = 4
 
     # load dataset
     dataset_path = f'data/chart.pkl'
@@ -162,7 +169,7 @@ def experiment(
                 with torch.no_grad():
                     if model_type == 'dt':
                         ret, length = evaluate_episode_rtg(
-                            test_env,
+                            ChartEnv.ChartEnv(chart = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=True) ,
                             state_dim,
                             act_dim,
                             model,
@@ -176,7 +183,7 @@ def experiment(
                         )
                     else:
                         ret, length = evaluate_episode(
-                            test_env,
+                            ChartEnv.ChartEnv(chart = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=True) ,
                             state_dim,
                             act_dim,
                             model,
@@ -198,6 +205,7 @@ def experiment(
             return return_dict
         
         return fn
+
     
     def get_loss_fn(s_hat, a_hat, r_hat, s, a, r, loss_outputs):
         
@@ -404,12 +412,13 @@ def experiment(
         if log_to_wandb:
             wandb.log(outputs)
             wandb.log(rcsl_outputs)
+        save_model(trainer.model, f"saved_models/{experiment_name}/iter_{iter+1}")
+
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--env', type=str, default='chart')
-    parser.add_argument('--dataset', type=str, default='medium')  # medium, medium-replay, medium-expert, expert
     parser.add_argument('--mode', type=str, default='normal')  # normal for standard setting, delayed for sparse
     parser.add_argument('--K', type=int, default=20)
     parser.add_argument('--pct_traj', type=float, default=1.)

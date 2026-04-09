@@ -2,20 +2,23 @@ from decision_transformer.training.Colab.utils import create_feature_set
 from decision_transformer.training.Colab.ChartEnv import ChartEnv
 import os
 import pandas as pd
+import numpy as np
+from pathlib import Path
 
 
-def build_env():
-    symbols = ['EURUSD', 'GBPUSD','USDJPY']
+DATAFILES_DIR = Path(__file__).resolve().parent / "datafiles"
+
+
+def build_charts():
+    symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF']
     df_charts = {}
 
     # build charts
-    for file in os.listdir("/home/lnxumalo/lustre/Experiment04/odt_sand/opt/decision-transformer-optbot/decision_transformer/training/Colab/datafiles"):
+    for file in os.listdir(DATAFILES_DIR):
         if file.endswith(".pkl"):
             symbol = file.replace(".pkl", "")
-            df_charts[symbol] = pd.read_pickle(os.path.join("/home/lnxumalo/lustre/Experiment04/odt_sand/opt/decision-transformer-optbot/decision_transformer/training/Colab/datafiles", file))
+            df_charts[symbol] = pd.read_pickle(DATAFILES_DIR / file)
     
-    #for symbol in df_charts.keys():
-    #    print(symbol,df_charts[symbol].shape)
 
     #build datasets
     env_charts = {}
@@ -44,14 +47,10 @@ def build_env():
         env_test_charts[symbol] = test_data
         env_close_test_prices[symbol] = test_close_data
     
-    #for symbol in symbols:
-    #    print('Train : ',symbol, env_charts[symbol].shape,env_close_prices[symbol].shape )
-    #    print('Test : ',symbol, env_test_charts[symbol].shape, env_close_test_prices[symbol].shape)
-    #    print('\n')
 
-    train_env = ChartEnv(chart_dict = env_charts, close_prices= env_close_prices , symbols = symbols,timesteps = 1, episode_length = 1000, recurrent= False, random_start=True) 
-    test_env = ChartEnv(chart_dict = env_test_charts, close_prices= env_close_test_prices , symbols = symbols,timesteps = 1, episode_length = 1000, recurrent= False, random_start=True)
+    env_charts = pd.concat(env_charts, axis=1)
+    env_charts = env_charts.astype(np.float32).dropna().values
+    env_test_charts = pd.concat(env_test_charts, axis=1)
+    env_test_charts = env_test_charts.astype(np.float32).dropna().values
 
-    return train_env, test_env
-
-build_env()
+    return env_charts, env_close_prices, env_test_charts, env_close_test_prices

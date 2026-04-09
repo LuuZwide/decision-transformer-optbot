@@ -1,19 +1,17 @@
 import numpy as np
 import pandas as pd
-from gym import spaces
+import gymnasium as gym
+from gymnasium import spaces
 import random
 from decision_transformer.training.Colab.portfolio import portfolio
 
-class ChartEnv():
+class ChartEnv(gym.Env):
+  metadata = {'render_modes': ['console']}
   
-  def __init__(self, chart_dict,close_prices, symbols ,timesteps = 20, episode_length = 4*60, recurrent= False, random_start = False):
-
-    self.chart = pd.concat(chart_dict, axis=1)
+  def __init__(self, chart,close_prices, symbols ,timesteps = 20, episode_length = 4*60, recurrent= False, random_start = False):
+    super(ChartEnv, self).__init__()
+    self.chart = chart
     self.close_prices_dict = close_prices
-    self.chart = self.chart.dropna().values
-    self.chart = self.chart.astype(np.float64)
-    #print('chart shape : ', self.chart.shape)
-    self.chart_dict = chart_dict
     self.symbols = symbols
     self.chart_len,self.cols = self.chart.shape
     #print(f"DEBUG: ChartEnv __init__: self.cols = {self.cols}, len(self.symbols) = {len(self.symbols)}") # Debug print
@@ -40,16 +38,16 @@ class ChartEnv():
     self.action_space = spaces.Box(low=-1, high=1,shape=(len(self.symbols),), dtype=np.float32)
     if not self.recurrent:
       self.observation_space = spaces.Box(low=-np.inf, high=np.inf,
-                                        shape=(20,), dtype=np.float64)
+                                        shape=(26,), dtype=np.float64)
     else:
       self.observation_space = spaces.Box(low=-np.inf, high=np.inf,
-                                        shape=(20,), dtype=np.float64)
+                                        shape=(26,), dtype=np.float64)
 
     self.port_values = np.zeros((self.chart_len + 1,1)) # Increased size by 1
     self.current_values = np.zeros((self.chart_len + 1,1))
     self.port_diffs = np.zeros((self.chart_len + 1,len(self.symbols))) # Increased size by 1
     self.actions = np.zeros((self.chart_len + 1,len(self.symbols))) # Increased size by 1
-    self.counter = 1
+    self.counter = 0
 
   def get_recurrent_state(self, index):
 
@@ -117,7 +115,8 @@ class ChartEnv():
     self.unreal_pnl = sum(self.portfolio.percentage_diff_dict.values())
     return reward
 
-  def reset(self, seed = None):
+  def reset(self, *, seed=None, options=None):
+    super().reset(seed=seed)
     _ = self.portfolio.reset()
     self.action_dict = {}
     self.port_value = 1
@@ -147,23 +146,25 @@ class ChartEnv():
       state = np.squeeze(state)
     self.prev_action = None
 
-    self.counter = 1
+    self.counter = 0
     return state
 
   def step(self, action):
 
-    trunc = False
-    done = False
     reward = self.calculate_reward(action)
-
-    if(self.counter%self.episode_length == 0):
-      trunc = True
 
     close_prices = {}
     for symbol in self.symbols:
       close_prices[symbol] = self.close_prices_dict[symbol].iloc[self.index]
 
-    self.index += 1
+    next_index = self.index + 1
+    self.counter += 1
+
+    terminated = self.current_value < 0.997 
+    truncated = self.counter >= self.episode_length or next_index >= self.chart_len
+
+    if next_index < self.chart_len:
+      self.index = next_index
 
     next_state = self.get_recurrent_state(self.index)
     if not self.recurrent:
@@ -172,7 +173,6 @@ class ChartEnv():
     else:
       next_state = np.squeeze(next_state)
 
-    self.counter += 1
     self.prev_action = action
     actions = []
     actions = np.array(np.round(list(self.action_dict.values()),2))
@@ -192,7 +192,8 @@ class ChartEnv():
         'action_dict' : actions,
         'port_value' : self.port_value
     }
-    return next_state, reward, done,trunc, info
+    
+    return next_state, reward, terminated, info
 
   def close(self):
     pass

@@ -51,7 +51,7 @@ class portfolio():
 
   def add_spread(self, close_price, symbol):
     bid_price = close_price
-    ask_price = close_price + self.spread_dict[symbol]
+    ask_price = close_price + self.spread_dict[symbol]*0.4
     return  bid_price, ask_price
 
   def update_value(self, close_values, action_dict, volatility): # close_value is the exit value
@@ -178,7 +178,7 @@ class portfolio():
     for symbol in self.symbols:
       self.total_trans[symbol] = self.b_counters[symbol] + self.s_counters[symbol] + self.n_counters[symbol]
 
-    reward = reward
+    reward = np.clip(reward*1000.0, -1, 1)
 
     self.prev_value = current_value
     self.prev_reward = reward
