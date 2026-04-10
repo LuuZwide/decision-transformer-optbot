@@ -46,6 +46,11 @@ def save_model(model, path):
     torch.save(model.state_dict(), path)
     print(f"Model saved to {path}")
 
+def load_model(model, path, device):
+    model.load_state_dict(torch.load(path, map_location=device))
+    model.to(device)
+    print(f"Model loaded from {path}")
+
 def experiment(
         project_name,
         variant
@@ -201,6 +206,62 @@ def experiment(
             return_dict['return_std_gm'] = np.std(returns)
             return_dict['length_mean_gm'] = np.mean(lengths)
             return_dict['length_std_gm'] = np.std(lengths)
+
+            #Evaluate Conditional performance
+            rcsl_table = wandb.Table(columns=["Target Performance", "Actual Performance"], allow_mixed_types=True) #Normalised scores 
+            rcsl_error_table = wandb.Table(columns=["Target Return", "MSE"], allow_mixed_types=True) #Mean Squared Error(MSE) L2
+            rcsl_std_table = wandb.Table(columns=["Target Return", "STD"], allow_mixed_types=True) #Standard Deviation(STD)
+
+            rcsl_mean_length = wandb.Table(columns=["Target Return", "Mean Length"], allow_mixed_types=True) #Mean Length of episodes
+            rcsl_std_length = wandb.Table(columns=["Target Return", "STD Length"], allow_mixed_types=True) #STD of Length of episodes
+
+            rc_loss = 0
+            
+            for eval_rtg_coef in [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]:
+                eval_rtg = target_rew * eval_rtg_coef 
+                scores = []
+                for i in range(num_eval_episodes):
+                    ret, length = evaluate_episode_rtg(
+                        ChartEnv.ChartEnv(chart = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=True),
+                        state_dim,
+                        act_dim,
+                        model,
+                        max_ep_len=max_ep_len,
+                        scale=scale,
+                        target_return=eval_rtg/scale,
+                        mode=mode,
+                        state_mean=state_mean,
+                        state_std=state_std,
+                        device=device,
+                        )
+                    scores.append(ret)
+                    lengths.append(length)
+                
+                mean_scores,std_scores = np.mean(scores),np.std(scores)
+                mean_lengths, std_lengths = np.mean(lengths), np.std(lengths)
+
+                #RCSL Table
+                rcsl_table.add_data(eval_rtg, mean_scores)
+
+                #RCSL Error Table
+                rcsl_error = (eval_rtg - mean_scores)**2
+                rcsl_error_table.add_data(eval_rtg, rcsl_error)
+
+                #RCSL std Table 
+                rcsl_std_table.add_data(eval_rtg, std_scores)
+
+                #RCSL Length Tables
+                rcsl_mean_length.add_data(eval_rtg, mean_lengths)
+                rcsl_std_length.add_data(eval_rtg, std_lengths)
+
+                rc_loss += rcsl_error
+
+            return_dict[f'rcsl_evaluation/RCSL Table'] = rcsl_table # Target vs Mean achieved 
+            return_dict[f'rcsl_evaluation/RCSL Error Table'] = rcsl_error_table # Target vs (MSE Error for that target return)
+            return_dict[f'rcsl_evaluation/RCSL std Table'] = rcsl_std_table # Target vs (STD of achieved)
+            return_dict["rcsl_evaluation/RCSL total loss"] = rc_loss # Total RCSL Loss
+            return_dict["rcsl_evaluation/RCSL mean length"] = rcsl_mean_length # Target vs Mean Length
+            return_dict["rcsl_evaluation/RCSL std length"] = rcsl_std_length
             
             return return_dict
         
