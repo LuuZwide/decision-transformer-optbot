@@ -284,25 +284,38 @@ def experiment(
     #Perform hyper parameter search ....
     def objective(trial):
 
+        #Phase 1 of HPS - Stabilize training
+
+        #Phase 2 Architecture related hyperparameters
+            # n_layer 
+            # embed_dim
+            # n_head
+        
+        #Phase 3 Regularization related hyperparameters
+            # dropout
+
         learning_rate = trial.suggest_loguniform("learning_rate",1e-5, 1e-2)
-        n_layer = trial.suggest_categorical("n_layer", [3, 5, 7])
-        n_head = trial.suggest_categorical("n_head",[1,2,4])
-        dropout = trial.suggest_uniform("dropout",0.0,0.5)
-        embed_dim = trial.suggest_categorical("embed_dim",[128,256,512])
-        context_k = trial.suggest_categorical("context_k",[5,20,50])
+        #n_layer = trial.suggest_categorical("n_layer", [2, 4, 6])
+        #n_head = trial.suggest_categorical("n_head", [2, 4, 8])
+        #dropout = trial.suggest_uniform("dropout",0.1,0.3)
+        embed_dim = trial.suggest_categorical("embed_dim",[128,256])
+        context_k = trial.suggest_categorical("context_k",[10,20,50])
+        batch_size = trial.suggest_categorical("batch_size", [32, 64])
 
         variant['learning_rate'] = learning_rate
-        variant['n_layer'] = n_layer
-        variant['n_head'] = n_head
-        variant['dropout'] = dropout
+        #variant['n_layer'] = n_layer
+        #variant['n_head'] = n_head
+        #variant['dropout'] = dropout
         variant['embed_dim'] = embed_dim
-
+        variant['batch_size'] = batch_size
+        
         dict_values = {}
         dict_values['learning_rate'] = learning_rate
-        dict_values['n_layer'] = n_layer    
-        dict_values['n_head'] = n_head
-        dict_values['dropout'] = dropout
+        #dict_values['n_layer'] = n_layer    
+        #dict_values['n_head'] = n_head
+        #dict_values['dropout'] = dropout
         dict_values['embed_dim'] = embed_dim
+        dict_values['batch_size'] = batch_size
 
         if model_type == 'dt':
             model = DecisionTransformer(
@@ -363,42 +376,44 @@ def experiment(
             eval_fns=[eval_episodes(tar) for tar in env_targets],
         )
         
-        if log_to_wandb:
-            wandb.init(
-            project= project_name ,
-            name= experiment_name,
-            config=variant
-        )
-        
         for iter in range(variant['max_hp_iters']):
             outputs, rcsl_outputs = trainer.train_iteration(num_steps=variant['num_hp_steps_per_iter'], iter_num=iter+1, print_logs=True)
-            if log_to_wandb:
-                wandb.log(outputs)
-                wandb.log(rcsl_outputs)
+            current_return = outputs["evaluation/return_mean_gm"]
+            trial.report(current_return, step=iter)
+            if trial.should_prune():
+                raise optuna.TrialPruned()
 
-        return rcsl_outputs["rcsl_evaluation/RCSL total loss"]
+        return outputs["evaluation/return_mean_gm"]
 
     if variant['do_search'] != 0: 
-        study = optuna.create_study(direction='minimize',
-                                    storage="sqlite:///dt_" + variant['env'] + "-" + variant['dataset'] + "-" + variant['loss_outputs'] + ".sqlite3",
-                                    study_name=variant['env']+'-'+variant['dataset']+"-Hyperparam-search-"+variant['loss_outputs'],)
+        pruner = optuna.pruners.MedianPruner(
+            n_startup_trials=max(5, variant['num_trials'] // 5),
+            n_warmup_steps=max(1, variant['max_hp_iters'] // 3),
+            interval_steps=1,
+        )
+
+        study = optuna.create_study(direction='maximize',
+                                    storage="sqlite:///dt_" + variant['env'] + "-" + variant['loss_outputs'] + ".sqlite3",
+                                    study_name=variant['env']+"-Hyperparam-search-"+variant['loss_outputs'],
+                                    pruner=pruner)
 
         study.optimize(
             objective,
             n_trials=variant['num_trials']
+
         )
-        wandb.finish()
         #change experiment name ...-Best
         out = variant['loss_outputs']
         experiment_name = f'DT_{env_name}-{out}-Best'
 
         #Best params
         variant['learning_rate'] = study.best_params['learning_rate']
-        variant['n_layer'] = study.best_params['n_layer']
-        variant['n_head'] = study.best_params['n_head']
-        variant['dropout'] = study.best_params['dropout']   
+        #variant['n_layer'] = study.best_params['n_layer']
+        #variant['n_head'] = study.best_params['n_head']
+        #variant['dropout'] = study.best_params['dropout']   
         variant['embed_dim'] = study.best_params['embed_dim']
         variant['K'] = study.best_params['context_k']
+        variant['batch_size'] = study.best_params['batch_size']
         print("HPS Complete - Best hyperparameters : ", study.best_params)
 
 
@@ -445,7 +460,7 @@ def experiment(
         trainer = SequenceTrainer(
             model=model,
             optimizer=optimizer,
-            batch_size=batch_size,
+            batch_size=variant['batch_size'],
             get_batch=get_batch,
             scheduler=scheduler,
             loss_fn= lambda s_hat, a_hat, r_hat, s, a, r: get_loss_fn(s_hat, a_hat, r_hat, s, a, r, variant['loss_outputs']), #log a and r loss
@@ -455,7 +470,7 @@ def experiment(
         trainer = ActTrainer(
             model=model,
             optimizer=optimizer,
-            batch_size=batch_size,
+            batch_size=variant['batch_size'],
             get_batch=get_batch,
             scheduler=scheduler,
             loss_fn= lambda s_hat, a_hat, r_hat, s, a, r: get_loss_fn(s_hat, a_hat, r_hat, s, a, r, variant['loss_outputs']),
@@ -487,7 +502,7 @@ if __name__ == '__main__':
     parser.add_argument('--model_type', type=str, default='dt')  # dt for decision transformer, bc for behavior cloning
     parser.add_argument('--embed_dim', type=int, default=128)
     parser.add_argument('--n_layer', type=int, default=3)
-    parser.add_argument('--n_head', type=int, default=1)
+    parser.add_argument('--n_head', type=int, default=4)
     parser.add_argument('--activation_function', type=str, default='relu')
     parser.add_argument('--dropout', type=float, default=0.1)
     parser.add_argument('--learning_rate', '-lr', type=float, default=1e-4)
