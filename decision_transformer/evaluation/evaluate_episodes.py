@@ -137,5 +137,7 @@ def evaluate_episode_rtg(
 
         if done:
             break
-
-    return episode_return, episode_length
+    
+    #return info['current_value'] as well for logging purposes
+ 
+    return episode_return, episode_length, info['current_value']

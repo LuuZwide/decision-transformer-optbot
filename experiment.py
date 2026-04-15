@@ -169,11 +169,11 @@ def experiment(
 
         return_dict = dict()
         def fn(model):
-            returns, lengths = [], []
+            returns, lengths, current_values = [], [], []
             for _ in range(num_eval_episodes):
                 with torch.no_grad():
                     if model_type == 'dt':
-                        ret, length = evaluate_episode_rtg(
+                        ret, length, current_value = evaluate_episode_rtg(
                             ChartEnv.ChartEnv(chart = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=True) ,
                             state_dim,
                             act_dim,
@@ -201,11 +201,14 @@ def experiment(
                         )
                 returns.append(ret)
                 lengths.append(length)
+                if model_type == 'dt':
+                    current_values.append(current_value)
             
             return_dict['return_mean_gm'] = np.mean(returns)
             return_dict['return_std_gm'] = np.std(returns)
             return_dict['length_mean_gm'] = np.mean(lengths)
             return_dict['length_std_gm'] = np.std(lengths)
+            return_dict['current_value_mean_gm'] = np.mean(current_values)
 
             #Evaluate Conditional performance
             rcsl_table = wandb.Table(columns=["Target Performance", "Actual Performance"], allow_mixed_types=True) #Normalised scores 
@@ -214,14 +217,16 @@ def experiment(
 
             rcsl_mean_length = wandb.Table(columns=["Target Return", "Mean Length"], allow_mixed_types=True) #Mean Length of episodes
             rcsl_std_length = wandb.Table(columns=["Target Return", "STD Length"], allow_mixed_types=True) #STD of Length of episodes
+            rcsl_current_value_table = wandb.Table(columns=["Target Return", "Mean Current Value"], allow_mixed_types=True) #Mean Current Value of episodes
 
             rc_loss = 0
             
             for eval_rtg_coef in [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]:
                 eval_rtg = target_rew * eval_rtg_coef 
                 scores = []
+                current_values = []
                 for i in range(num_eval_episodes):
-                    ret, length = evaluate_episode_rtg(
+                    ret, length, current_value = evaluate_episode_rtg(
                         ChartEnv.ChartEnv(chart = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=True),
                         state_dim,
                         act_dim,
@@ -236,9 +241,13 @@ def experiment(
                         )
                     scores.append(ret)
                     lengths.append(length)
+                    if model_type == 'dt':
+                        current_values.append(current_value)
                 
                 mean_scores,std_scores = np.mean(scores),np.std(scores)
                 mean_lengths, std_lengths = np.mean(lengths), np.std(lengths)
+                mean_current_values, std_current_values = np.mean(current_values), np.std(current_values)
+                rcsl_current_value_table.add_data(eval_rtg, mean_current_values)
 
                 #RCSL Table
                 rcsl_table.add_data(eval_rtg, mean_scores)
@@ -262,6 +271,9 @@ def experiment(
             return_dict["rcsl_evaluation/RCSL total loss"] = rc_loss # Total RCSL Loss
             return_dict["rcsl_evaluation/RCSL mean length"] = rcsl_mean_length # Target vs Mean Length
             return_dict["rcsl_evaluation/RCSL std length"] = rcsl_std_length
+            return_dict["rcsl_evaluation/RCSL mean current value"] = mean_current_values
+            return_dict["rcsl_evaluation/RCSL std current value"] = std_current_values
+            return_dict["rcsl_evaluation/RCSL current value table"] = rcsl_current_value_table
             
             return return_dict
         
