@@ -13,14 +13,14 @@ from decision_transformer.models.decision_transformer import DecisionTransformer
 from decision_transformer.models.mlp_bc import MLPBCModel
 from decision_transformer.training.act_trainer import ActTrainer
 from decision_transformer.training.seq_trainer import SequenceTrainer
-from decision_transformer.training.Colab import ChartEnv, build
+from decision_transformer.training.Colab import ChartEnv, build, utils
 
 os.environ["WANDB_MODE"] = "offline"
 env_charts, env_close_prices, env_test_charts, env_close_test_prices = build.build_charts()
 
 max_ep_len = 1000
 scale = 1.0
-env_targets = [3.0, 6.0]
+env_targets = [30.0]
 
 """
     tags used to define and separate different experiments
@@ -63,8 +63,8 @@ def experiment(
     model_type = variant['model_type']
     experiment_name = f'DT_{env_name}-{variant["loss_outputs"]}'
 
-    state_dim = 26
-    act_dim = 4
+    state_dim = 32
+    act_dim = 5
 
     # load dataset
     dataset_path = f'data/chart.pkl'
@@ -174,7 +174,7 @@ def experiment(
                 with torch.no_grad():
                     if model_type == 'dt':
                         ret, length, current_value = evaluate_episode_rtg(
-                            ChartEnv.ChartEnv(chart = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=True) ,
+                            ChartEnv.ChartEnv(chart = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=True) ,
                             state_dim,
                             act_dim,
                             model,
@@ -188,7 +188,7 @@ def experiment(
                         )
                     else:
                         ret, length = evaluate_episode(
-                            ChartEnv.ChartEnv(chart = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=True) ,
+                            ChartEnv.ChartEnv(chart = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=True) ,
                             state_dim,
                             act_dim,
                             model,
@@ -206,6 +206,7 @@ def experiment(
             
             return_dict['return_mean_gm'] = np.mean(returns)
             return_dict['return_std_gm'] = np.std(returns)
+            return_dict['normalised_return'] = utils.normalize_score(np.mean(returns))
             return_dict['length_mean_gm'] = np.mean(lengths)
             return_dict['length_std_gm'] = np.std(lengths)
             return_dict['current_value_mean_gm'] = np.mean(current_values)
@@ -214,7 +215,7 @@ def experiment(
             rcsl_table = wandb.Table(columns=["Target Performance", "Actual Performance"], allow_mixed_types=True) #Normalised scores 
             rcsl_error_table = wandb.Table(columns=["Target Return", "MSE"], allow_mixed_types=True) #Mean Squared Error(MSE) L2
             rcsl_std_table = wandb.Table(columns=["Target Return", "STD"], allow_mixed_types=True) #Standard Deviation(STD)
-
+            rcsl_norm_score = wandb.Table(columns=["Target Norm Return", "Actual Return"], allow_mixed_types=True)
             rcsl_mean_length = wandb.Table(columns=["Target Return", "Mean Length"], allow_mixed_types=True) #Mean Length of episodes
             rcsl_std_length = wandb.Table(columns=["Target Return", "STD Length"], allow_mixed_types=True) #STD of Length of episodes
             rcsl_current_value_table = wandb.Table(columns=["Target Return", "Mean Current Value"], allow_mixed_types=True) #Mean Current Value of episodes
@@ -227,7 +228,7 @@ def experiment(
                 current_values = []
                 for i in range(num_eval_episodes):
                     ret, length, current_value = evaluate_episode_rtg(
-                        ChartEnv.ChartEnv(chart = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=True),
+                        ChartEnv.ChartEnv(chart = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=True),
                         state_dim,
                         act_dim,
                         model,
@@ -251,6 +252,11 @@ def experiment(
 
                 #RCSL Table
                 rcsl_table.add_data(eval_rtg, mean_scores)
+                norm_target = utils.normalize_score(eval_rtg)
+                norm_actual = utils.normalize_score(mean_scores)
+
+
+                rcsl_norm_score.add_column(norm_target,norm_actual)
 
                 #RCSL Error Table
                 rcsl_error = (eval_rtg - mean_scores)**2
@@ -274,7 +280,7 @@ def experiment(
             return_dict["rcsl_evaluation/RCSL mean current value"] = mean_current_values
             return_dict["rcsl_evaluation/RCSL std current value"] = std_current_values
             return_dict["rcsl_evaluation/RCSL current value table"] = rcsl_current_value_table
-            
+            return_dict["rcsl_evaluation/RCSL norm score table"] = rcsl_norm_score
             return return_dict
         
         return fn

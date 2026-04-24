@@ -38,10 +38,10 @@ class ChartEnv(gym.Env):
     self.action_space = spaces.Box(low=-1, high=1,shape=(len(self.symbols),), dtype=np.float32)
     if not self.recurrent:
       self.observation_space = spaces.Box(low=-np.inf, high=np.inf,
-                                        shape=(26,), dtype=np.float64)
+                                        shape=(32,), dtype=np.float64)
     else:
       self.observation_space = spaces.Box(low=-np.inf, high=np.inf,
-                                        shape=(26,), dtype=np.float64)
+                                        shape=(32,), dtype=np.float64)
 
     self.port_values = np.zeros((self.chart_len + 1,1)) # Increased size by 1
     self.current_values = np.zeros((self.chart_len + 1,1))

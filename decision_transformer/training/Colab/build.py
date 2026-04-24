@@ -10,7 +10,7 @@ DATAFILES_DIR = Path(__file__).resolve().parent / "datafiles"
 
 
 def build_charts():
-    symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF']
+    symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD']
     df_charts = {}
 
     # build charts

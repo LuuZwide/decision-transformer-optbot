@@ -68,3 +68,11 @@ def create_feature_set(df):
   close_prices = df['close']
 
   return features ,close_prices
+
+def normalize_score(value, min_value =  -6.5, max_value = 31.1):
+
+    if max_value == min_value:
+        raise ValueError("max_value and min_value cannot be the same")
+    
+    score = ((value - min_value) / (max_value - min_value)) * 100
+    return max(0, min(100, score)) 
