@@ -256,7 +256,7 @@ def experiment(
                 norm_actual = utils.normalize_score(mean_scores)
 
 
-                rcsl_norm_score.add_column(norm_target,norm_actual)
+                rcsl_norm_score.add_data(norm_target,norm_actual)
 
                 #RCSL Error Table
                 rcsl_error = (eval_rtg - mean_scores)**2
