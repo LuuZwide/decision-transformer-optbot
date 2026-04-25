@@ -51,7 +51,7 @@ class portfolio():
 
   def add_spread(self, close_price, symbol):
     bid_price = close_price
-    ask_price = close_price + self.spread_dict[symbol]*0.4
+    ask_price = close_price + self.spread_dict[symbol]
     return  bid_price, ask_price
 
   def update_value(self, close_values, action_dict, volatility): # close_value is the exit value
