@@ -18,7 +18,7 @@ from decision_transformer.training.Colab import ChartEnv, build, utils
 os.environ["WANDB_MODE"] = "offline"
 env_charts, env_close_prices, env_test_charts, env_close_test_prices = build.build_charts()
 
-max_ep_len = 1000
+max_ep_len = 1440
 scale = 1.0
 env_targets = [30.0]
 
