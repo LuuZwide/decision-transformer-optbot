@@ -20,7 +20,7 @@ env_charts, env_close_prices, env_test_charts, env_close_test_prices = build.bui
 
 max_ep_len = 1440
 scale = 1.0
-env_targets = [30.0]
+env_targets = [25.0]
 
 """
     tags used to define and separate different experiments
