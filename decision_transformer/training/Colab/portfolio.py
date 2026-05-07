@@ -180,7 +180,7 @@ class portfolio():
     for symbol in self.symbols:
       self.total_trans[symbol] = self.b_counters[symbol] + self.s_counters[symbol] + self.n_counters[symbol]
 
-    self.prev_value = current_value
+    self.prev_value = self.value
     self.prev_reward = reward
     return reward,self.percentage_diff_dict, current_value
 
