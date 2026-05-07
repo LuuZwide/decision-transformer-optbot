@@ -62,7 +62,7 @@ def create_feature_set(df):
   df['ema_dist'] = (df['close'] - df['ema_50']) / df['ema_50']
 
   df.dropna(inplace=True)
-  features = df[['raw_return','kalman_ret','ema_dist','divergence']]
+  features = df[['raw_return','ema_dist','kalman_ret']]
   #features = df['raw_return']
 
   close_prices = df['close']

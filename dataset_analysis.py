@@ -10,15 +10,9 @@ average_step_reward = []
 with open(dataset_path, 'rb') as f:
     trajectories = pickle.load(f)
 
-states, traj_lens, returns = [], [], []
+states, actions, traj_lens, returns = [], [], [], []
 for path in trajectories:
-
-    #clip all rewards to be in [-1, 1]
-    for i in range(len(path['rewards'])):
-        if path['rewards'][i]*scale > 1.0:
-            path['rewards'][i] = 1.0
-        elif path['rewards'][i]*scale < -1.0:
-            path['rewards'][i] = -1.0
+    actions.append(path['actions'])
     states.append(path['observations'])
     traj_lens.append(len(path['observations']))
     returns.append(path['rewards'].sum())
@@ -41,13 +35,17 @@ print(f'Number of trajectories with returns between -1 and 1: {num_traj_between_
 print(f'Number of trajectories with returns between 1 and 5: {num_traj_between_1_and_5}')
 print(f'Number of trajectories with returns greater than 5: {num_traj_greater_than_5}')
 
-target_return = 30.0
+target_return = 100.0
 
-for coef in [0, 0.1, 0.2, 0.3, 0.4, 0.6, 0.7, 0.8, 0.9, 1.0]:
+for coef in [0, 0.1, 0.2, 0.3, 0.4,0.5, 0.6, 0.7, 0.8, 0.9, 1.0]:
     num_traj_above_target = np.sum(returns >= target_return * coef)
     print(f'Number of trajectories with returns above {target_return * coef}: {num_traj_above_target}')
 
 #Print first observation, reward and action of the first trajectory
-print(f'First observation of the first trajectory: {states[0][0]}')
-print(f'First reward of the first trajectory: {returns[0]}')
-print(f'First action of the first trajectory: {trajectories[879]["actions"][11]}')
+#calculate averge mean for each action
+
+action_all = np.concatenate(actions, axis=0)
+mean_actions, std_actions = np.mean(action_all, axis=0), np.std(action_all, axis=0)
+
+print('mean_actions :', mean_actions)
+print('std_actions :', std_actions)

@@ -38,10 +38,10 @@ class ChartEnv(gym.Env):
     self.action_space = spaces.Box(low=-1, high=1,shape=(len(self.symbols),), dtype=np.float32)
     if not self.recurrent:
       self.observation_space = spaces.Box(low=-np.inf, high=np.inf,
-                                        shape=(32,), dtype=np.float64)
+                                        shape=(27,), dtype=np.float32)
     else:
       self.observation_space = spaces.Box(low=-np.inf, high=np.inf,
-                                        shape=(32,), dtype=np.float64)
+                                        shape=(27,), dtype=np.float32)
 
     self.port_values = np.zeros((self.chart_len + 1,1)) # Increased size by 1
     self.current_values = np.zeros((self.chart_len + 1,1))
@@ -80,8 +80,7 @@ class ChartEnv(gym.Env):
     current_position_sequence = np.tile(self.current_position, (1, self.timesteps, 1)) # Renamed to avoid shadowing
     #print(f"DEBUG: get_recurrent_state: current_position_sequence shape: {current_position_sequence.shape}")
 
-    state = np.concatenate((port_sequence,current_value_sequence,sequence,port_diff_sequence,current_position_sequence), axis=2).astype(np.float64)
-    #print(f"DEBUG: get_recurrent_state: state shape before flatten/squeeze: {state.shape}") # Debug print
+    state = np.concatenate((port_sequence,current_value_sequence,sequence,port_diff_sequence,current_position_sequence), axis=2).astype(np.float32)
     return state
 
   def calculate_reward(self, action):

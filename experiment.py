@@ -63,7 +63,7 @@ def experiment(
     model_type = variant['model_type']
     experiment_name = f'DT_{env_name}-{variant["loss_outputs"]}'
 
-    state_dim = 32
+    state_dim = 27
     act_dim = 5
 
     # load dataset
