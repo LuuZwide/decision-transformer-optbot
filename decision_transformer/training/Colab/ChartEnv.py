@@ -159,7 +159,7 @@ class ChartEnv(gym.Env):
     next_index = self.index + 1
     self.counter += 1
 
-    terminated = self.current_value < 0.997 
+    terminated = False
     truncated = self.counter >= self.episode_length or next_index >= self.chart_len
 
     if next_index < self.chart_len:
