@@ -8,7 +8,7 @@ class portfolio():
       self.percentage_diff_dict = dict.fromkeys(symbols, 0)
       self.bought =  dict.fromkeys(symbols, False)
       self.selling = dict.fromkeys(symbols, False)
-      self.threshold_value = 0.1
+      self.threshold_value = 0
       self.updating = dict.fromkeys(symbols, False)
       self.b_counters = dict.fromkeys(symbols, 0.0)
       self.s_counters = dict.fromkeys(symbols, 0.0)

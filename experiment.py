@@ -274,13 +274,13 @@ def experiment(
             return_dict[f'rcsl_evaluation/RCSL Table'] = rcsl_table # Target vs Mean achieved 
             return_dict[f'rcsl_evaluation/RCSL Error Table'] = rcsl_error_table # Target vs (MSE Error for that target return)
             return_dict[f'rcsl_evaluation/RCSL std Table'] = rcsl_std_table # Target vs (STD of achieved)
-            return_dict["rcsl_evaluation/RCSL total loss"] = rc_loss # Total RCSL Loss
-            return_dict["rcsl_evaluation/RCSL mean length"] = rcsl_mean_length # Target vs Mean Length
-            return_dict["rcsl_evaluation/RCSL std length"] = rcsl_std_length
-            return_dict["rcsl_evaluation/RCSL mean current value"] = mean_current_values
-            return_dict["rcsl_evaluation/RCSL std current value"] = std_current_values
-            return_dict["rcsl_evaluation/RCSL current value table"] = rcsl_current_value_table
-            return_dict["rcsl_evaluation/RCSL norm score table"] = rcsl_norm_score
+            return_dict[f"rcsl_evaluation/RCSL total loss"] = rc_loss # Total RCSL Loss
+            return_dict[f"rcsl_evaluation/RCSL mean length"] = rcsl_mean_length # Target vs Mean Length
+            return_dict[f"rcsl_evaluation/RCSL std length"] = rcsl_std_length
+            return_dict[f"rcsl_evaluation/RCSL mean current value"] = mean_current_values
+            return_dict[f"rcsl_evaluation/RCSL std current value"] = std_current_values
+            return_dict[f"rcsl_evaluation/RCSL current value table"] = rcsl_current_value_table
+            return_dict[f"rcsl_evaluation/RCSL norm score table"] = rcsl_norm_score
             return return_dict
         
         return fn
@@ -313,25 +313,24 @@ def experiment(
             # dropout
 
         learning_rate = trial.suggest_loguniform("learning_rate",1e-5, 1e-2)
-        #n_layer = trial.suggest_categorical("n_layer", [2, 4, 6])
-        #n_head = trial.suggest_categorical("n_head", [2, 4, 8])
-        #dropout = trial.suggest_uniform("dropout",0.1,0.3)
-        embed_dim = trial.suggest_categorical("embed_dim",[128,256])
+        n_layer = trial.suggest_categorical("n_layer", [3, 5, 7])
+        n_head = trial.suggest_categorical("n_head", [2, 4, 8])
+        dropout = trial.suggest_uniform("dropout",0.1,0.3)
+        embed_dim = trial.suggest_categorical("embed_dim",[128,256,512])
         context_k = trial.suggest_categorical("context_k",[10,20,50])
-        batch_size = trial.suggest_categorical("batch_size", [32, 64])
 
         variant['learning_rate'] = learning_rate
-        #variant['n_layer'] = n_layer
-        #variant['n_head'] = n_head
-        #variant['dropout'] = dropout
+        variant['n_layer'] = n_layer
+        variant['n_head'] = n_head
+        variant['dropout'] = dropout
         variant['embed_dim'] = embed_dim
         variant['batch_size'] = batch_size
         
         dict_values = {}
         dict_values['learning_rate'] = learning_rate
-        #dict_values['n_layer'] = n_layer    
-        #dict_values['n_head'] = n_head
-        #dict_values['dropout'] = dropout
+        dict_values['n_layer'] = n_layer    
+        dict_values['n_head'] = n_head
+        dict_values['dropout'] = dropout
         dict_values['embed_dim'] = embed_dim
         dict_values['batch_size'] = batch_size
 
@@ -396,12 +395,12 @@ def experiment(
         
         for iter in range(variant['max_hp_iters']):
             outputs, rcsl_outputs = trainer.train_iteration(num_steps=variant['num_hp_steps_per_iter'], iter_num=iter+1, print_logs=True)
-            current_return = outputs["evaluation/return_mean_gm"]
+            current_return = outputs["evaluation/normalised_return"]
             trial.report(current_return, step=iter)
             if trial.should_prune():
                 raise optuna.TrialPruned()
 
-        return outputs["evaluation/return_mean_gm"]
+        return outputs["evaluation/normalised_return"]
 
     if variant['do_search'] != 0: 
         pruner = optuna.pruners.MedianPruner(
@@ -426,12 +425,11 @@ def experiment(
 
         #Best params
         variant['learning_rate'] = study.best_params['learning_rate']
-        #variant['n_layer'] = study.best_params['n_layer']
-        #variant['n_head'] = study.best_params['n_head']
-        #variant['dropout'] = study.best_params['dropout']   
+        variant['n_layer'] = study.best_params['n_layer']
+        variant['n_head'] = study.best_params['n_head']
+        variant['dropout'] = study.best_params['dropout']   
         variant['embed_dim'] = study.best_params['embed_dim']
         variant['K'] = study.best_params['context_k']
-        variant['batch_size'] = study.best_params['batch_size']
         print("HPS Complete - Best hyperparameters : ", study.best_params)
 
 
