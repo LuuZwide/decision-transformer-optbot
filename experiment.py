@@ -174,7 +174,7 @@ def experiment(
                 with torch.no_grad():
                     if model_type == 'dt':
                         ret, length, current_value = evaluate_episode_rtg(
-                            ChartEnv.ChartEnv(chart = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=True) ,
+                            ChartEnv.ChartEnv(chart = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=False) ,
                             state_dim,
                             act_dim,
                             model,
@@ -188,7 +188,7 @@ def experiment(
                         )
                     else:
                         ret, length = evaluate_episode(
-                            ChartEnv.ChartEnv(chart = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=True) ,
+                            ChartEnv.ChartEnv(chart = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=False) ,
                             state_dim,
                             act_dim,
                             model,

@@ -132,7 +132,7 @@ class ChartEnv(gym.Env):
       self.index = random.randint(self.timesteps,end_index)
     else:
       self.index +=1
-      if self.index > end_index:
+      if self.index > end_index - 1440:
         self.index = 100
 
     self.start_index = self.index
