@@ -114,6 +114,8 @@ def experiment(
         ind -= 1
     sorted_inds = sorted_inds[-num_trajectories:]
 
+    print(f'{num_trajectories} trajectories, {timesteps} timesteps selected for training')
+
     # used to reweight sampling so we sample according to timesteps instead of trajectories
     p_sample = traj_lens[sorted_inds] / sum(traj_lens[sorted_inds])
 
@@ -403,6 +405,7 @@ def experiment(
         return outputs["evaluation/normalised_return"]
 
     if variant['do_search'] != 0: 
+        print("Starting hyperparameter search...")
         pruner = optuna.pruners.MedianPruner(
             n_startup_trials=max(5, variant['num_trials'] // 5),
             n_warmup_steps=max(1, variant['max_hp_iters'] // 3),
@@ -433,6 +436,7 @@ def experiment(
         print("HPS Complete - Best hyperparameters : ", study.best_params)
 
 
+    print("Initializing final model with best hyperparameters...")
     if model_type == 'dt':
         model = DecisionTransformer(
             state_dim=state_dim,
@@ -460,6 +464,7 @@ def experiment(
         raise NotImplementedError
 
     model = model.to(device=device)
+    print("Model initialized with best hyperparameters.")
 
     warmup_steps = variant['warmup_steps']
     optimizer = torch.optim.AdamW( # type: ignore
@@ -471,6 +476,7 @@ def experiment(
         optimizer,
         lambda steps: min((steps+1)/warmup_steps, 1)
     )
+    print("Optimizer and scheduler initialized.")
 
     if model_type == 'dt':
         trainer = SequenceTrainer(
@@ -498,6 +504,7 @@ def experiment(
             name= experiment_name,
             config=variant
         )
+    print("Wandb initialized.")
 
     for iter in range(variant['max_iters']):
         outputs, rcsl_outputs = trainer.train_iteration(num_steps=variant['num_steps_per_iter'], iter_num=iter+1, print_logs=True)
@@ -505,6 +512,7 @@ def experiment(
             wandb.log(outputs)
             wandb.log(rcsl_outputs)
         save_model(trainer.model, f"saved_models/{experiment_name}/iter_{iter+1}")
+        print(f"Finished iteration {iter+1}")
 
 
 
