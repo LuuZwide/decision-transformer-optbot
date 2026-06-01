@@ -19,7 +19,7 @@ os.environ["WANDB_MODE"] = "offline"
 env_charts, env_close_prices, env_test_charts, env_close_test_prices = build.build_charts()
 
 max_ep_len = 1440
-scale = 1.0
+scale = 10.0
 
 """
     tags used to define and separate different experiments
@@ -544,7 +544,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_hp_iters', type=int, default=10) 
     parser.add_argument('--num_hp_steps_per_iter', type=int, default=10) #30 minutes each 
     parser.add_argument('--tag', type=str, default='baseline') #HPS / baseline
-    parser.add_argument('--env_targets', type=float, nargs='+', default=[5.0]) #List of target returns to evaluate on
+    parser.add_argument('--env_targets', type=float, nargs='+', default=[10.0]) #List of target returns to evaluate on
 
     #Outputs
     parser.add_argument('--loss_outputs', type=str, default='A') #Can be A, AS, or ASR

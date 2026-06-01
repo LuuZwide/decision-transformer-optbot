@@ -51,7 +51,7 @@ class DecisionTransformer(TrajectoryModel):
         )
         self.predict_return = torch.nn.Linear(hidden_size, 1)
 
-    def forward(self, states, actions, rewards, returns_to_go, timesteps, attention_mask=None):
+    def forward(self, states, actions, rewards, returns_to_go, timesteps, attention_mask=None, output_attentions=False):
 
         batch_size, seq_length = states.shape[0], states.shape[1]
 
@@ -86,6 +86,7 @@ class DecisionTransformer(TrajectoryModel):
         transformer_outputs = self.transformer(
             inputs_embeds=stacked_inputs,
             attention_mask=stacked_attention_mask,
+            output_attentions=output_attentions,
         )
         x = transformer_outputs['last_hidden_state']
 
@@ -97,8 +98,9 @@ class DecisionTransformer(TrajectoryModel):
         return_preds = self.predict_return(x[:,2])  # predict next return given state and action
         state_preds = self.predict_state(x[:,2])    # predict next state given state and action
         action_preds = self.predict_action(x[:,1])  # predict next action given state
+        attentions = transformer_outputs.get('attentions', None)
 
-        return state_preds, action_preds, return_preds
+        return state_preds, action_preds, return_preds, attentions
 
     def get_action(self, states, actions, rewards, returns_to_go, timesteps, **kwargs):
         # we don't care about the past rewards in this model
@@ -134,7 +136,7 @@ class DecisionTransformer(TrajectoryModel):
         else:
             attention_mask = None
 
-        _, action_preds, return_preds = self.forward(
+        _, action_preds, return_preds,_ = self.forward(
             states, actions, None, returns_to_go, timesteps, attention_mask=attention_mask, **kwargs)
 
-        return action_preds[0,-1]
+        return action_preds[0,-1], return_preds[0,-1]

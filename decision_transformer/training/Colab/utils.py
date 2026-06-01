@@ -69,7 +69,7 @@ def create_feature_set(df):
 
   return features ,close_prices
 
-def normalize_score(value, min_value =  -5.0, max_value = 5.0):
+def normalize_score(value, min_value =  -0.1, max_value = 1.0):
 
     if max_value == min_value:
         raise ValueError("max_value and min_value cannot be the same")

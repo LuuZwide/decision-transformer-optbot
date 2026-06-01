@@ -18,4 +18,4 @@ class TrajectoryModel(nn.Module):
 
     def get_action(self, states, actions, rewards, **kwargs):
         # these will come as tensors on the correct device
-        return torch.zeros_like(actions[-1])
+        return torch.zeros_like(actions[-1]), torch.zeros(1)

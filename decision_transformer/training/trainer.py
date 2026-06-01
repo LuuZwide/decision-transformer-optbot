@@ -67,16 +67,16 @@ class Trainer:
 
     def train_step(self):
         states, actions, rewards, dones, attention_mask, returns = self.get_batch(self.batch_size) #256 trajeoctories of length K
-        state_target, action_target, reward_target = torch.clone(states), torch.clone(actions), torch.clone(rewards)
+        state_target, action_target, return_target = torch.clone(states), torch.clone(actions), torch.clone(returns)
 
-        state_preds, action_preds, reward_preds = self.model.forward(
+        state_preds, action_preds, return_target_preds, _ = self.model.forward(
             states, actions, rewards, masks=None, attention_mask=attention_mask, target_return=returns,
         )
 
         # note: currently indexing & masking is not fully correct
         loss = self.loss_fn(
-            state_preds, action_preds, reward_preds,
-            state_target[:,1:], action_target, reward_target[:,1:], # shift 1 step forwards to align
+            state_preds, action_preds, return_target_preds,
+            state_target[:,1:], action_target, return_target[:,1:], # shift 1 step forwards to align
         )
         self.optimizer.zero_grad()
         loss.backward()
