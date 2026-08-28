@@ -1,10 +1,16 @@
 import torch
+import d4rl 
 import numpy as np
 import pickle
 from decision_transformer.models.decision_transformer import DecisionTransformer
-from decision_transformer.training.Colab import ChartEnv, build
+#from decision_transformer.training.Colab import ChartEnv, build
 import matplotlib.pyplot as plt
 import seaborn as sns
+import gym
+import numpy as np
+import torch
+import wandb
+
 
 def get_attention_weights(model, state, actions, rewards, target_return, timesteps):
     """
@@ -65,10 +71,11 @@ def get_attn_via_hook(model):
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-dataset_path ="/opt/decision-transformer-optbot/data/chart.pkl"
+dataset_path ="/opt/decision-transformer-optbot/data/hopper-medium-v2.pkl"
 with open(dataset_path, 'rb') as f:
     trajectories = pickle.load(f)
 
+env = gym.make('Hopper-v2')
 
 states, traj_lens, returns = [], [], []
 for traj in trajectories:
@@ -80,16 +87,16 @@ for traj in trajectories:
 all_observations = np.concatenate(states, axis=0)
 state_mean = torch.from_numpy(np.mean(all_observations, axis=0)).to(device=device, dtype=torch.float32)
 state_std = torch.from_numpy(np.std(all_observations, axis=0) + 1e-6).to(device=device, dtype=torch.float32)
-state_dim = 27
-act_dim = 5
-max_ep_len = 1440
-scale = 1
+state_dim = env.observation_space.shape[0]
+act_dim = env.action_space.shape[0]
+max_ep_len = 1000
+scale = 1000.
 
 model = DecisionTransformer(
     state_dim=state_dim,
     act_dim=act_dim,
     max_length=20,
-    max_ep_len=1440,
+    max_ep_len=max_ep_len,
     hidden_size=128,
     n_layer=3,
     n_head=4,
@@ -103,11 +110,10 @@ model = DecisionTransformer(
 max_length = 20
 
 model.eval()
-model.load_state_dict(torch.load('/opt/decision-transformer-optbot/saved_models/DT_chart-ASR/DT', map_location=device, weights_only=True))
+model.load_state_dict(torch.load('/opt/decision-transformer-optbot/saved_models/DT_hopper-medium-ASR', map_location=device, weights_only=True))
 model.to(device=device)
 
-initial_target_return = 25.0
-env_charts, env_close_prices, env_test_charts, env_close_test_prices = build.build_charts()
+initial_target_return = 3600
 
 curr_value_sum = 0
 port_value_sum = 0
@@ -115,7 +121,6 @@ port_value_sum = 0
 action_array = []
 avg_returns = []
 for episode in range(20):
-    env = ChartEnv.ChartEnv(chart = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=True)
 
     state = env.reset()
     # we keep all the histories on the device
@@ -128,7 +133,7 @@ for episode in range(20):
     timesteps = torch.tensor(0, device=device, dtype=torch.long).reshape(1, 1)
     sim_states = []
     episode_return, episode_length, predicted_return = 0, 0, 0
-    for t in range(10):
+    for t in range(max_ep_len):
         # add padding
         actions = torch.cat([actions, torch.zeros((1, act_dim), device=device)], dim=0)
         rewards = torch.cat([rewards, torch.zeros(1, device=device)])
@@ -162,11 +167,11 @@ for episode in range(20):
         predicted_return += returns_predictions.detach().cpu().numpy()[0]
 
         # if t < 500 :
-        #    avg_attn = get_attention_weights(model, states_input, actions_input, rewards_input, target_return_input, timesteps_input)
+        avg_attn = get_attention_weights(model, states_input, actions_input, rewards_input, target_return_input, timesteps_input)
         # else:
         #    done = True
-        if episode_return < -5:
-            done = True
+        #if episode_return < -5:
+        #    done = True
 
         target_return = torch.cat(
             [target_return, pred_return.reshape(1, 1)], dim=1)
@@ -180,16 +185,14 @@ for episode in range(20):
             break   
     
     avg_returns.append(episode_return)
-    curr_value_sum += (info['current_value'] -1 )
-    port_value_sum += (info['port_value'] -1 )
     #average actions
     avg_actions, std_actions = np.round(np.mean(action_array, axis=0),2), np.round(np.std(action_array, axis=0),2)
-    print(f"Episode {episode}: Step {t}, Final Episode Return: {returns_predictions.detach().cpu().numpy()[0]}, Predicted Return: {predicted_return}, current_value: {info['current_value']}, port_value: {info['port_value']}, avg_action: {avg_actions}, std_action: {std_actions}")
+    print(f"Episode {episode}: Step {t}, Final Episode Return: {returns_predictions.detach().cpu().numpy()[0]}, Predicted Return: {predicted_return}")
 
 print(f"Average Return over 10 episodes: {np.mean(avg_returns)}")
 print("Current Value sum : ", curr_value_sum)
 print("Port Value sum : ", port_value_sum)
-#plt.figure(figsize=(10, 8))
-#sns.heatmap(avg_attn.cpu().numpy(), cmap='viridis')
-#plt.title("Attention Heatmap")
-#plt.show()
+plt.figure(figsize=(10, 8))
+sns.heatmap(avg_attn.cpu().numpy(), cmap='viridis')
+plt.title("Attention Heatmap")
+plt.show()

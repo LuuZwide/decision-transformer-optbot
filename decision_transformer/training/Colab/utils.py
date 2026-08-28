@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 def kalman_denoise(data, process_noise=1e-5, measurement_noise=1e-3):
     """
@@ -47,29 +48,54 @@ def kalman_denoise(data, process_noise=1e-5, measurement_noise=1e-3):
 
     return xhat
 
-def create_feature_set(df):
+def create_feature_set(df, symbol):
   df = df.copy()
-  df['raw_return'] = np.log(df['close'] / df['close'].shift(1))
+  #show columns
+  print(f"Columns for {symbol}: {df.columns.tolist()}")
+  df.dropna(inplace=True)
 
-  #Kalman denoise
-  kalman_denoised_data = kalman_denoise(df['close'].values)
-  df['kalman_denoised'] = kalman_denoised_data
-  df['kalman_ret'] = np.log(df['kalman_denoised'] / df['kalman_denoised'].shift(1))
-
-  df['divergence'] = (df['close'] - df['kalman_denoised'])/df['kalman_denoised']
-
+  df['ret_1m'] = np.log(df['close'] / df['close'].shift(1))
+  df["volatility_20"] = (
+    df["ret_1m"]
+      .rolling(20)
+      .std()
+  )
+  df['ret_5m'] = np.log(df['close'] / df['close'].shift(5))
+  df['ret_15m'] = np.log(df['close'] / df['close'].shift(15))
   df['ema_50'] = df['close'].ewm(span=50, adjust=False).mean()
   df['ema_dist'] = (df['close'] - df['ema_50']) / df['ema_50']
 
+
+  if 'time' in df.columns:
+      df['date'] = pd.to_datetime(df['time'])
+      minute_of_day = df['date'].dt.hour * 60 + df['date'].dt.minute
+      df['tod_sin'] = np.sin(2 * np.pi * minute_of_day / 1440)
+      df['tod_cos'] = np.cos(2 * np.pi * minute_of_day / 1440)
+      dow = df['date'].dt.dayofweek
+      df['dow_sin'] = np.sin(2 * np.pi * dow / 7)
+      df['dow_cos'] = np.cos(2 * np.pi * dow / 7)
+
+  nan_rows = df[df.isnull().any(axis=1)]
+  nan_count = len(nan_rows)
+  print(f"NaN Count: {nan_count}")
+
   df.dropna(inplace=True)
-  features = df[['raw_return','ema_dist','kalman_ret']]
-  #features = df['raw_return']
 
+  feature_cols = []
+  if 'tod_sin' in df.columns and symbol == 'EURUSD':
+      feature_cols.extend(['tod_sin', 'tod_cos', 'dow_sin', 'dow_cos'])
+
+  feature_cols.extend(['ret_1m','ret_5m','ret_15m','volatility_20','ema_dist'])
+  features = df[feature_cols]
   close_prices = df['close']
+  dates = df['date'] if 'date' in df.columns else None
 
-  return features ,close_prices
+  print('Features Shape: ',features.shape)
+  print('Close Prices Shape: ',close_prices.shape)
 
-def normalize_score(value, min_value =  -0.1, max_value = 1.0):
+  return features ,close_prices,dates
+
+def normalize_score(value, min_value =  -2.0, max_value = 2.0):
 
     if max_value == min_value:
         raise ValueError("max_value and min_value cannot be the same")

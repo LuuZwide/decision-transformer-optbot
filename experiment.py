@@ -16,10 +16,10 @@ from decision_transformer.training.seq_trainer import SequenceTrainer
 from decision_transformer.training.Colab import ChartEnv, build, utils
 
 os.environ["WANDB_MODE"] = "offline"
-env_charts, env_close_prices, env_test_charts, env_close_test_prices = build.build_charts()
+env_charts, env_close_prices, env_dates, env_test_charts, env_close_test_prices, env_dates_test = build.build_charts()
 
 max_ep_len = 1440
-scale = 10.0
+scale = 1.0
 
 """
     tags used to define and separate different experiments
@@ -56,14 +56,14 @@ def experiment(
     ):
     device = variant.get('device', 'cuda')
     log_to_wandb = variant.get('log_to_wandb', False)
-    env_targets = variant.get('env_targets', [5.0])
+    env_targets = variant.get('env_targets', [2.0])
 
     project_name = f'{project_name}-{variant["tag"]}'
     env_name = variant['env']
     model_type = variant['model_type']
     experiment_name = f'DT_{env_name}-{variant["loss_outputs"]}'
 
-    state_dim = 27
+    state_dim = 41
     act_dim = 5
 
     # load dataset
@@ -176,7 +176,7 @@ def experiment(
                 with torch.no_grad():
                     if model_type == 'dt':
                         ret, length, current_value = evaluate_episode_rtg(
-                            ChartEnv.ChartEnv(chart = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=False) ,
+                            ChartEnv.ChartEnv(chart_dict = env_charts, close_prices= env_close_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=False, dates_dict= env_dates, noise_level=1e-5) ,
                             state_dim,
                             act_dim,
                             model,
@@ -190,7 +190,7 @@ def experiment(
                         )
                     else:
                         ret, length = evaluate_episode(
-                            ChartEnv.ChartEnv(chart = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=False) ,
+                            ChartEnv.ChartEnv(chart_dict = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=False, dates_dict= env_dates_test, noise_level=1e-5) ,
                             state_dim,
                             act_dim,
                             model,
@@ -230,7 +230,7 @@ def experiment(
                 current_values = []
                 for i in range(num_eval_episodes):
                     ret, length, current_value = evaluate_episode_rtg(
-                        ChartEnv.ChartEnv(chart = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=True),
+                        ChartEnv.ChartEnv(chart_dict = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=True, dates_dict= env_dates_test, noise_level=1e-5),
                         state_dim,
                         act_dim,
                         model,
@@ -298,6 +298,8 @@ def experiment(
             return torch.mean((a_hat - a)**2) + torch.mean((s_hat - s)**2)
         elif loss_outputs == 'AR': 
             return torch.mean((a_hat - a)**2) + torch.mean((r_hat - r)**2)
+        elif loss_outputs == 'R':
+            return torch.mean((r_hat - r)**2)
         else :
             return torch.mean((a_hat - a)**2) + torch.mean((s_hat - s)**2) + torch.mean((r_hat - r)**2)
         
