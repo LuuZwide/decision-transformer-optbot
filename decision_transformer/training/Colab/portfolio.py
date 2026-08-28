@@ -10,9 +10,9 @@ class portfolio():
       self.bought =  dict.fromkeys(symbols, False)
       self.selling = dict.fromkeys(symbols, False)
       self.threshold_value = 0.1
-      self.buy_threshold = 1
+      self.buy_threshold = 0.5
       self.prev_current_value = 1
-      self.sell_threshold = 0
+      self.sell_threshold = 0.5
       self.updating = dict.fromkeys(symbols, False)
       self.b_counters = dict.fromkeys(symbols, 0.0)
       self.s_counters = dict.fromkeys(symbols, 0.0)
@@ -77,21 +77,21 @@ class portfolio():
       if (self.selling[symbol] and self.bought[symbol]):
         print("something wrong 1 ")
 
-      if (action == self.buy_threshold) and self.bought[symbol]: #Update port
+      if (action > self.buy_threshold) and self.bought[symbol]: #Update port
         bought_value  = self.bought_values[symbol]
         bid_price, _ = self.add_spread(close_value, symbol, current_hour) # Calculate Bid
         percentage_diff, port_change = self.calculate_returns(bid_price, 'B',bought_value, -1)
         self.port_changes[symbol] = port_change
         self.percentage_diff_dict[symbol] = percentage_diff
 
-      if (action == self.sell_threshold) and self.selling[symbol]: #Update port
+      if (action < self.sell_threshold) and self.selling[symbol]: #Update port
         selling_value = self.selling_values[symbol]
         _, ask_price = self.add_spread(close_value, symbol, current_hour) # Calculate Ask
         percentage_diff, port_change = self.calculate_returns(ask_price, 'S', -1 ,selling_value)
         self.port_changes[symbol] = port_change
         self.percentage_diff_dict[symbol] = percentage_diff
 
-      if (action == self.buy_threshold) and not self.bought[symbol]: # First buy
+      if (action > self.buy_threshold) and not self.bought[symbol]: # First buy
         if self.selling[symbol]: #Close the sell trade
           self.selling[symbol] = False
           self.s_counters[symbol] +=0.5
@@ -114,7 +114,7 @@ class portfolio():
             self.port_changes[symbol] = port_change
             self.percentage_diff_dict[symbol] = percentage_diff
 
-      if (action == self.sell_threshold) and not self.selling[symbol] : # First Sell
+      if (action < self.sell_threshold) and not self.selling[symbol] : # First Sell
         if self.bought[symbol]: #Close the buy trade
           self.b_counters[symbol] += 0.5
           self.bought[symbol] = False
