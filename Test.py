@@ -1,9 +1,9 @@
 import torch
-import d4rl 
+#import d4rl 
 import numpy as np
 import pickle
 from decision_transformer.models.decision_transformer import DecisionTransformer
-#from decision_transformer.training.Colab import ChartEnv, build
+from decision_transformer.training.Colab import ChartEnv, build
 import matplotlib.pyplot as plt
 import seaborn as sns
 import gym
@@ -11,6 +11,7 @@ import numpy as np
 import torch
 import wandb
 
+env_charts, env_close_prices, env_dates, env_test_charts, env_close_test_prices, env_dates_test = build.build_charts()
 
 def get_attention_weights(model, state, actions, rewards, target_return, timesteps):
     """
@@ -71,11 +72,11 @@ def get_attn_via_hook(model):
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-dataset_path ="/opt/decision-transformer-optbot/data/hopper-medium-v2.pkl"
+dataset_path ="/opt/decision-transformer-optbot/data/chart.pkl"
 with open(dataset_path, 'rb') as f:
     trajectories = pickle.load(f)
 
-env = gym.make('Hopper-v2')
+env = ChartEnv.ChartEnv(chart_dict = env_charts, close_prices= env_close_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=True, dates_dict= env_dates, noise_level=1e-5)
 
 states, traj_lens, returns = [], [], []
 for traj in trajectories:
@@ -87,10 +88,10 @@ for traj in trajectories:
 all_observations = np.concatenate(states, axis=0)
 state_mean = torch.from_numpy(np.mean(all_observations, axis=0)).to(device=device, dtype=torch.float32)
 state_std = torch.from_numpy(np.std(all_observations, axis=0) + 1e-6).to(device=device, dtype=torch.float32)
-state_dim = env.observation_space.shape[0]
-act_dim = env.action_space.shape[0]
-max_ep_len = 1000
-scale = 1000.
+state_dim = 41
+act_dim = 5
+max_ep_len = 1440
+scale = 1.
 
 model = DecisionTransformer(
     state_dim=state_dim,
@@ -110,10 +111,10 @@ model = DecisionTransformer(
 max_length = 20
 
 model.eval()
-model.load_state_dict(torch.load('/opt/decision-transformer-optbot/saved_models/DT_hopper-medium-ASR', map_location=device, weights_only=True))
+model.load_state_dict(torch.load('/opt/decision-transformer-optbot/saved_models/DT', map_location=device, weights_only=True))
 model.to(device=device)
 
-initial_target_return = 3600
+initial_target_return = 10
 
 curr_value_sum = 0
 port_value_sum = 0
@@ -122,7 +123,7 @@ action_array = []
 avg_returns = []
 for episode in range(20):
 
-    state = env.reset()
+    state,_ = env.reset()
     # we keep all the histories on the device
     # note that the latest action and reward will be "padding"
     states = torch.from_numpy(state).reshape(1, state_dim).to(device=device, dtype=torch.float32)
@@ -155,9 +156,12 @@ for episode in range(20):
         )
         actions[-1] = action
         action = action.detach().cpu().numpy()
+        print(f"Action at step {t}: {np.round(action, 2)}")
+
         action_array.append(action)
 
-        state, reward, done, info = env.step(action)
+
+        next_state, reward, done,trunc, info = env.step(action)
         cur_state = torch.from_numpy(state).to(device=device).reshape(1, state_dim)
         states = torch.cat([states, cur_state], dim=0)
         rewards[-1] = reward

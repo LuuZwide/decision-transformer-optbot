@@ -32,6 +32,7 @@ def build_charts():
     for symbol in symbols:
         chart = df_charts[symbol]
         feature_df,close_df,dates_df = create_feature_set(chart, symbol)
+        
 
         train_size = int(len(feature_df) * 0.9)
 
