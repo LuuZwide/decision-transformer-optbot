@@ -20,6 +20,9 @@ for path in trajectories:
 
 traj_lens, returns = np.array(traj_lens), np.array(returns)  
 
+#obersvation and action shapes
+print(f'Observation shape: {states[0].shape}, Action shape: {actions[0].shape}')
+
 print(f'Number of trajectories: {len(traj_lens)}')
 print(f'Average return trajectory: {np.mean(returns)}, std: {np.std(returns)}, max: {np.max(returns)}, min: {np.min(returns)}')
 print(f'Average trajectory length: {np.mean(traj_lens)}, std: {np.std(traj_lens)}, max: {np.max(traj_lens)}, min: {np.min(traj_lens)}')

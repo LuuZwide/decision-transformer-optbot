@@ -66,8 +66,8 @@ def create_feature_set(df, symbol):
   df['ema_dist'] = (df['close'] - df['ema_50']) / df['ema_50']
 
 
-  if 'time' in df.columns:
-      df['date'] = pd.to_datetime(df['time'])
+  if 'date' in df.columns:
+      df['date'] = pd.to_datetime(df['date'])
       minute_of_day = df['date'].dt.hour * 60 + df['date'].dt.minute
       df['tod_sin'] = np.sin(2 * np.pi * minute_of_day / 1440)
       df['tod_cos'] = np.cos(2 * np.pi * minute_of_day / 1440)

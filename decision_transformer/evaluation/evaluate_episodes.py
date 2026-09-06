@@ -62,6 +62,7 @@ def evaluate_episode(
         if done or trunc:
             break
 
+    print(f"Average actions taken in episodes:{np.round(np.mean(avg_actions,axis=0),2)} ")
     return episode_return, episode_length
 
 
@@ -86,6 +87,7 @@ def evaluate_episode_rtg(
     state_std = torch.from_numpy(state_std).to(device=device)
 
     state, _ = env.reset()
+
     if mode == 'noise':
         state = state + np.random.normal(0, 0.1, size=state.shape)
 
@@ -100,6 +102,7 @@ def evaluate_episode_rtg(
     timesteps = torch.tensor(0, device=device, dtype=torch.long).reshape(1, 1)
 
     sim_states = []
+    avg_actions = []
 
     episode_return, episode_length = 0, 0
     trunc = False
@@ -119,6 +122,10 @@ def evaluate_episode_rtg(
         )
         actions[-1] = action
         action = action.detach().cpu().numpy()
+
+        # for each element in the action array, if element 0.5> make 1 else 0
+        action = torch.where(torch.tensor(action) > 0.5, torch.tensor(1.0), torch.tensor(0.0)).numpy()
+        avg_actions.append(action)
 
         state, reward, done, trunc, info = env.step(action)
 
@@ -141,8 +148,10 @@ def evaluate_episode_rtg(
         episode_length += 1
 
         if done or trunc:
+            print("Trans counts: ", info['total_trans'])
             break
     
     #return info['current_value'] as well for logging purposes
+    print(f"Average actions taken in episodes:{np.round(np.mean(avg_actions,axis=0),2)} ")
  
     return episode_return, episode_length, info['current_value']

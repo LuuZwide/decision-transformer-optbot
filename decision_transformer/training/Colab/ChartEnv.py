@@ -43,7 +43,6 @@ class ChartEnv(gym.Env):
     # self.action_space = MultiDiscrete([2] * len(self.symbols))
 
     obs_dim = 2 + self.cols + 2*len(self.symbols)
-    print('obs_dim : ', obs_dim)
 
     self.observation_space = spaces.Box(low=-np.inf, high=np.inf,
                                         shape=(obs_dim,), dtype=np.float32)
