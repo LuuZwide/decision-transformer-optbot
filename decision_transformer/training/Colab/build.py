@@ -15,9 +15,9 @@ def build_charts():
 
     # build charts
     for file in os.listdir(DATAFILES_DIR):
-        if file.endswith(".pkl"):
-            symbol = file.replace(".pkl", "")
-            df_charts[symbol] = pd.read_pickle(DATAFILES_DIR / file)
+        if file.endswith(".csv"):
+            symbol = file.replace(".csv", "")
+            df_charts[symbol] = pd.read_csv(DATAFILES_DIR / file)
     
 
     #build datasets

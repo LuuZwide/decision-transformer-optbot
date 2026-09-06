@@ -56,7 +56,7 @@ def experiment(
     ):
     device = variant.get('device', 'cuda')
     log_to_wandb = variant.get('log_to_wandb', False)
-    env_targets = variant.get('env_targets', [2.0])
+    env_targets = variant.get('env_targets', [1.0])
 
     project_name = f'{project_name}-{variant["tag"]}'
     env_name = variant['env']

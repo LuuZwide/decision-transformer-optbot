@@ -152,7 +152,7 @@ for episode in range(1440):
         target_return_input = target_return[:, -max_length:] if target_return.shape[1] > max_length else target_return
         timesteps_input = timesteps[:, -max_length:] if timesteps.shape[1] > max_length else timesteps
 
-        action, returns_predictions = model.get_action(
+        action, action_dist = model.get_action(
             (states_input.to(dtype=torch.float32) - state_mean) / state_std,
             actions_input.to(dtype=torch.float32),
             rewards_input.to(dtype=torch.float32),

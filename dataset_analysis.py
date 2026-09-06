@@ -28,14 +28,14 @@ print(f'Average step reward: {np.mean(average_step_reward)}, std: {np.std(averag
 
 #Number of trajectories where returns between -1 and 1, and between 1 and greater than 5
 num_traj_between_neg1_and_1 = np.sum((returns >= -1) & (returns <= 1))
-num_traj_between_1_and_5 = np.sum((returns > 1) & (returns <= 5))
-num_traj_greater_than_5 = np.sum(returns > 5)
+num_traj_between_1_and_5 = np.sum((returns > 1) & (returns <= 1))
+num_traj_greater_than_5 = np.sum(returns > 1)
 
 print(f'Number of trajectories with returns between -1 and 1: {num_traj_between_neg1_and_1}')
 print(f'Number of trajectories with returns between 1 and 5: {num_traj_between_1_and_5}')
 print(f'Number of trajectories with returns greater than 5: {num_traj_greater_than_5}')
 
-target_return = 5.0
+target_return = 1.0
 
 for coef in [0, 0.1, 0.2, 0.3, 0.4,0.5, 0.6, 0.7, 0.8, 0.9, 1.0]:
     num_traj_above_target = np.sum(returns >= target_return * coef)
@@ -48,5 +48,5 @@ action_all = np.concatenate(actions, axis=0)
 mean_actions, std_actions = np.mean(action_all, axis=0), np.std(action_all, axis=0)
 
 print('mean_actions :', mean_actions)
-print('First action of the first trajectory :', actions[0][0:100])
+#print('First action of the first trajectory :', actions[0][0:100])
 print('std_actions :', std_actions)

@@ -17,6 +17,7 @@ def evaluate_episode(
 
     model.eval()
     model.to(device=device)
+    avg_actions = []
 
     state_mean = torch.from_numpy(state_mean).to(device=device)
     state_std = torch.from_numpy(state_std).to(device=device)
@@ -47,6 +48,8 @@ def evaluate_episode(
         actions[-1] = action
         action = action.detach().cpu().numpy()
 
+        action = torch.where(torch.tensor(action) > 0.5, torch.tensor(1.0), torch.tensor(0.0)).numpy()
+        avg_actions.append(action)
         state, reward, done, trunc, info = env.step(action)
 
         cur_state = torch.from_numpy(state).to(device=device).reshape(1, state_dim)
