@@ -85,9 +85,8 @@ for traj in trajectories:
     returns.append(traj['rewards'].sum())
 
 # Concatenate all observations into a single array for proper normalization
-all_observations = np.concatenate(states, axis=0)
-state_mean = torch.from_numpy(np.mean(all_observations, axis=0)).to(device=device, dtype=torch.float32)
-state_std = torch.from_numpy(np.std(all_observations, axis=0) + 1e-6).to(device=device, dtype=torch.float32)
+states = np.concatenate(states, axis=0)
+state_mean, state_std = np.mean(states, axis=0), np.std(states, axis=0) + 1e-6
 state_dim = 41
 act_dim = 5
 max_ep_len = 1440
@@ -114,14 +113,16 @@ model.load_state_dict(torch.load('/opt/decision-transformer-optbot/saved_models/
 model.to(device=device)
 model.eval()
 
-initial_target_return = 0.5
+initial_target_return = 9.0
 
 curr_value_sum = 0
 port_value_sum = 0
 # run for 10 episodes
 action_array = []
 avg_returns = []
-for episode in range(1):
+
+return_totals = np.zeros((5,1))
+for episode in range(10):
 
     state,_ = env.reset()
     # we keep all the histories on the device
@@ -154,16 +155,16 @@ for episode in range(1):
 
         # for each element in the action array, if element 0.5> make 1 else 0
         action = np.where(action > 0.5, 1, 0)
-        print(f"Action at step {t}: {np.round(action, 2)}")
+        
 
         action_array.append(action)
 
-
         next_state, reward, done,trunc, info = env.step(action)
-        cur_state = torch.from_numpy(state).to(device=device).reshape(1, state_dim)
+
+        cur_state = torch.from_numpy(next_state).to(device=device).reshape(1, state_dim)
         states = torch.cat([states, cur_state], dim=0)
         rewards[-1] = reward
-        print(f"Reward at step {t}: {reward}")
+        #print(f"Reward at step {t}: {reward}")
     
         pred_return = target_return[0,-1] - (reward/scale)
         #print("Predicted Return: ",returns_predictions.detach().cpu().numpy()[0], "Reward: ", reward, "Updated Predicted Return: ", pred_return.detach().cpu().numpy()[0])
@@ -185,7 +186,11 @@ for episode in range(1):
         #print("Predicted Return: ",returns_to_go.detach().cpu().numpy()[0], "Episode Return: ", target_return[0,-1].detach().cpu().numpy())
         episode_length += 1
         if done or trunc:
-            print(f"Episode {episode}: Step {t}, Final Episode Return: {returns_predictions.detach().cpu().numpy()[0]}, Predicted Return: {predicted_return}, trans counts: {info['total_trans']}, Current Value: {info['current_value']}, Portfolio Value: {info['port_value']}")
+            return_totals += np.array([info['trans_sum']]).T
+            print(f"Action at step {t}: {np.round(action, 2)}")
+            print(f"Episode {episode}: Step {t}, Final Episode Return: {returns_predictions.detach().cpu().numpy()[0]}, trans_sum: {info['trans_sum']}, trans counts: {info['total_trans']}, Current Value: {info['current_value']}")
+            print(f"Current returns: {return_totals.T[0]}")
+            print("------------------------------------------------------------")
             break   
     
     avg_returns.append(episode_return)

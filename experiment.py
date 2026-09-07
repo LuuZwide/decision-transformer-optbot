@@ -401,12 +401,12 @@ def experiment(
         
         for iter in range(variant['max_hp_iters']):
             outputs, rcsl_outputs = trainer.train_iteration(num_steps=variant['num_hp_steps_per_iter'], iter_num=iter+1, print_logs=True)
-            current_return = outputs["evaluation/normalised_return"]
+            current_return = outputs["evaluation/return_mean_gm"]
             trial.report(current_return, step=iter)
             if trial.should_prune():
                 raise optuna.TrialPruned()
 
-        return outputs["evaluation/normalised_return"]
+        return outputs["evaluation/return_mean_gm"]
 
     if variant['do_search'] != 0: 
         print("Starting hyperparameter search...")
@@ -548,7 +548,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_hp_iters', type=int, default=10) 
     parser.add_argument('--num_hp_steps_per_iter', type=int, default=10) #30 minutes each 
     parser.add_argument('--tag', type=str, default='baseline') #HPS / baseline
-    parser.add_argument('--env_targets', type=float, nargs='+', default=[0.2]) #List of target returns to evaluate on
+    parser.add_argument('--env_targets', type=float, nargs='+', default=[9.0]) #List of target returns to evaluate on
 
     #Outputs
     parser.add_argument('--loss_outputs', type=str, default='A') #Can be A, AS, or ASR
