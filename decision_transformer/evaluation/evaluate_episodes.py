@@ -148,10 +148,9 @@ def evaluate_episode_rtg(
         episode_length += 1
 
         if done or trunc:
-            print("Trans counts: ", info['total_trans'])
             break
     
     #return info['current_value'] as well for logging purposes
-    print(f"Average actions taken in episodes:{np.round(np.mean(avg_actions,axis=0),2)} ")
- 
+    print(f"Index: {env.index}, Target: {np.round(ep_return, 2)}, Avg Actions:{np.round(np.mean(avg_actions,axis=0), 2)}, Trans counts: {info['total_trans']}, episode length: {episode_length}, Reward: {np.round(episode_return, 2)})")
+
     return episode_return, episode_length, info['current_value']

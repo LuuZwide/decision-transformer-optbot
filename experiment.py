@@ -56,7 +56,7 @@ def experiment(
     ):
     device = variant.get('device', 'cuda')
     log_to_wandb = variant.get('log_to_wandb', False)
-    env_targets = variant.get('env_targets', [1.0])
+    env_targets = variant.get('env_targets', [0.5])
 
     project_name = f'{project_name}-{variant["tag"]}'
     env_name = variant['env']
@@ -114,7 +114,7 @@ def experiment(
         ind -= 1
     sorted_inds = sorted_inds[-num_trajectories:]
 
-    print(f'{num_trajectories} trajectories, {timesteps} timesteps selected for training')
+    print(f'{num_trajectories} trajectories, {timesteps} timesteps selected for training, avg len: {np.mean(traj_lens[sorted_inds]):.2f}, min len: {np.min(traj_lens[sorted_inds])}, max len: {np.max(traj_lens[sorted_inds])} std: {np.std(traj_lens[sorted_inds]):.2f}')
 
     # used to reweight sampling so we sample according to timesteps instead of trajectories
     p_sample = traj_lens[sorted_inds] / sum(traj_lens[sorted_inds])
@@ -165,6 +165,8 @@ def experiment(
         timesteps = torch.from_numpy(np.concatenate(timesteps, axis=0)).to(dtype=torch.long, device=device)
         mask = torch.from_numpy(np.concatenate(mask, axis=0)).to(device=device)
 
+        #Print some states about batch 
+        #print(f"action mean: {a.mean().item():.4f}, action std: {a.std().item():.4f}, reward mean: {r.mean().item():.4f}, reward std: {r.std().item():.4f}, rtg mean: {rtg.mean().item():.4f}, rtg std: {rtg.std().item():.4f}, lens mean: {mask.sum().item()/mask.shape[0]:.4f}, lens std: {mask.sum(dim=1).std().item():.4f}")
         return s, a, r, d, rtg, timesteps, mask
 
     def eval_episodes(target_rew):
@@ -546,7 +548,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_hp_iters', type=int, default=10) 
     parser.add_argument('--num_hp_steps_per_iter', type=int, default=10) #30 minutes each 
     parser.add_argument('--tag', type=str, default='baseline') #HPS / baseline
-    parser.add_argument('--env_targets', type=float, nargs='+', default=[10.0]) #List of target returns to evaluate on
+    parser.add_argument('--env_targets', type=float, nargs='+', default=[0.2]) #List of target returns to evaluate on
 
     #Outputs
     parser.add_argument('--loss_outputs', type=str, default='A') #Can be A, AS, or ASR

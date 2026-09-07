@@ -110,23 +110,18 @@ model = DecisionTransformer(
 
 max_length = 20
 
-checkpoint = torch.load('/opt/decision-transformer-optbot/saved_models/model.pt', weights_only=False)
-
-
-
-model.eval()
-#model.load_state_dict(torch.load('/opt/decision-transformer-optbot/saved_models/DT', map_location=device, weights_only=True))
-model.load_state_dict(checkpoint['model_state_dict'])
+model.load_state_dict(torch.load('/opt/decision-transformer-optbot/saved_models/DT', map_location=device, weights_only=True))
 model.to(device=device)
+model.eval()
 
-initial_target_return = 1
+initial_target_return = 0.5
 
 curr_value_sum = 0
 port_value_sum = 0
 # run for 10 episodes
 action_array = []
 avg_returns = []
-for episode in range(1440):
+for episode in range(1):
 
     state,_ = env.reset()
     # we keep all the histories on the device
@@ -134,37 +129,32 @@ for episode in range(1440):
     states = torch.from_numpy(state).reshape(1, state_dim).to(device=device, dtype=torch.float32)
     actions = torch.zeros((0, act_dim), device=device, dtype=torch.float32)
     rewards = torch.zeros(0, device=device, dtype=torch.float32)
+
     ep_return = initial_target_return
     target_return = torch.tensor(ep_return, device=device, dtype=torch.float32).reshape(1, 1)
     timesteps = torch.tensor(0, device=device, dtype=torch.long).reshape(1, 1)
+
     sim_states = []
+
     episode_return, episode_length, predicted_return = 0, 0, 0
     for t in range(max_ep_len):
         # add padding
         actions = torch.cat([actions, torch.zeros((1, act_dim), device=device)], dim=0)
         rewards = torch.cat([rewards, torch.zeros(1, device=device)])
-        
-
-        # Trim to max_length for model input
-        states_input = states[-max_length:] if len(states) > max_length else states
-        actions_input = actions[-max_length:] if len(actions) > max_length else actions
-        rewards_input = rewards[-max_length:] if len(rewards) > max_length else rewards
-        target_return_input = target_return[:, -max_length:] if target_return.shape[1] > max_length else target_return
-        timesteps_input = timesteps[:, -max_length:] if timesteps.shape[1] > max_length else timesteps
 
         action, returns_predictions = model.get_action(
-            (states_input.to(dtype=torch.float32) - state_mean) / state_std,
-            actions_input.to(dtype=torch.float32),
-            rewards_input.to(dtype=torch.float32),
-            target_return_input.to(dtype=torch.float32),
-            timesteps_input.to(dtype=torch.long),
+            (states.to(dtype=torch.float32) - state_mean) / state_std,
+            actions.to(dtype=torch.float32),
+            rewards.to(dtype=torch.float32),
+            target_return.to(dtype=torch.float32),
+            timesteps.to(dtype=torch.long),
         )
         actions[-1] = action
         action = action.detach().cpu().numpy()
 
         # for each element in the action array, if element 0.5> make 1 else 0
-        final_action = np.where(action > 0.5, 1, 0)
-        print(f"Action at step {t}: {np.round(final_action, 2)}")
+        action = np.where(action > 0.5, 1, 0)
+        print(f"Action at step {t}: {np.round(action, 2)}")
 
         action_array.append(action)
 
@@ -180,7 +170,7 @@ for episode in range(1440):
         predicted_return += returns_predictions.detach().cpu().numpy()[0]
 
         # if t < 500 :
-        avg_attn = get_attention_weights(model, states_input, actions_input, rewards_input, target_return_input, timesteps_input)
+        # avg_attn = get_attention_weights(model, states, actions, rewards, target_return, timesteps)
         # else:
         #    done = True
         #if episode_return < -5:
@@ -194,13 +184,14 @@ for episode in range(1440):
         episode_return += reward
         #print("Predicted Return: ",returns_to_go.detach().cpu().numpy()[0], "Episode Return: ", target_return[0,-1].detach().cpu().numpy())
         episode_length += 1
-        if done:
+        if done or trunc:
+            print(f"Episode {episode}: Step {t}, Final Episode Return: {returns_predictions.detach().cpu().numpy()[0]}, Predicted Return: {predicted_return}, trans counts: {info['total_trans']}, Current Value: {info['current_value']}, Portfolio Value: {info['port_value']}")
             break   
     
     avg_returns.append(episode_return)
     #average actions
     avg_actions, std_actions = np.round(np.mean(action_array, axis=0),2), np.round(np.std(action_array, axis=0),2)
-    print(f"Episode {episode}: Step {t}, Final Episode Return: {returns_predictions.detach().cpu().numpy()[0]}, Predicted Return: {predicted_return}")
+    
 
 #print(f"Average Return over 10 episodes: {np.mean(avg_returns)}")
 #print("Current Value sum : ", curr_value_sum)
