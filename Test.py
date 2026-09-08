@@ -76,7 +76,7 @@ dataset_path ="/opt/decision-transformer-optbot/data/chart.pkl"
 with open(dataset_path, 'rb') as f:
     trajectories = pickle.load(f)
 
-env = ChartEnv.ChartEnv(chart_dict = env_charts, close_prices= env_close_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=True, dates_dict= env_dates, noise_level=1e-5)
+env = ChartEnv.ChartEnv(chart_dict = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=True, dates_dict= env_dates_test, noise_level=1e-5)
 
 states, traj_lens, returns = [], [], []
 for traj in trajectories:
