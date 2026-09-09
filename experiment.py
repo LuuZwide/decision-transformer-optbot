@@ -178,7 +178,7 @@ def experiment(
                 with torch.no_grad():
                     if model_type == 'dt':
                         ret, length, current_value = evaluate_episode_rtg(
-                            ChartEnv.ChartEnv(chart_dict = env_charts, close_prices= env_close_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=True, dates_dict= env_dates, noise_level=1e-5) ,
+                            ChartEnv.ChartEnv(chart_dict = env_charts, close_prices= env_close_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=False, dates_dict= env_dates, noise_level=1e-5) ,
                             state_dim,
                             act_dim,
                             model,
@@ -192,7 +192,7 @@ def experiment(
                         )
                     else:
                         ret, length = evaluate_episode(
-                            ChartEnv.ChartEnv(chart_dict = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=True, dates_dict= env_dates_test, noise_level=1e-5) ,
+                            ChartEnv.ChartEnv(chart_dict = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=False, dates_dict= env_dates_test, noise_level=1e-5) ,
                             state_dim,
                             act_dim,
                             model,
@@ -232,7 +232,7 @@ def experiment(
                 current_values = []
                 for i in range(num_eval_episodes):
                     ret, length, current_value = evaluate_episode_rtg(
-                        ChartEnv.ChartEnv(chart_dict = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=True, dates_dict= env_dates_test, noise_level=1e-5),
+                        ChartEnv.ChartEnv(chart_dict = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=False, dates_dict= env_dates_test, noise_level=1e-5),
                         state_dim,
                         act_dim,
                         model,

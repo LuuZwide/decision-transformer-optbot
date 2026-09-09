@@ -76,7 +76,7 @@ dataset_path ="/opt/decision-transformer-optbot/data/chart.pkl"
 with open(dataset_path, 'rb') as f:
     trajectories = pickle.load(f)
 
-env = ChartEnv.ChartEnv(chart_dict = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=True, dates_dict= env_dates_test, noise_level=1e-5)
+env = ChartEnv.ChartEnv(chart_dict = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=False, dates_dict= env_dates_test, noise_level=1e-5)
 
 states, traj_lens, returns = [], [], []
 for traj in trajectories:
@@ -188,7 +188,7 @@ for episode in range(10):
         if done or trunc:
             return_totals += np.array([info['trans_sum']]).T
             print(f"Action at step {t}: {np.round(action, 2)}")
-            print(f"Episode {episode}: Step {t}, Final Episode Return: {returns_predictions.detach().cpu().numpy()[0]}, trans_sum: {info['trans_sum']}, trans counts: {info['total_trans']}, Current Value: {info['current_value']}")
+            print(f"Index {env.index}: Step {t}, Final Episode Return: {returns_predictions.detach().cpu().numpy()[0]}, trans_sum: {info['trans_sum']}, trans counts: {info['total_trans']}, Current Value: {info['current_value']}")
             print(f"Current returns: {return_totals.T[0]}")
             print("------------------------------------------------------------")
             break   
