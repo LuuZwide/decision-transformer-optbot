@@ -35,12 +35,12 @@ num_traj_between_1_and_5 = np.sum((returns > 1) & (returns <= 1))
 num_traj_greater_than_5 = np.sum(returns > 1)
 
 
-target_return = 1.0
+target_return = 10.0
 
 # Print lengths of trajectories with returns above target_return * coef for coef in [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 for coef in [0, 0.1, 0.2, 0.3, 0.4,0.5, 0.6, 0.7, 0.8, 0.9, 1.0]:
-    num_traj_above_target = np.sum(traj_lens >= 1440 * coef)
-    print(f'Number of trajectories with returns above {1440 * coef}: {num_traj_above_target}')
+    num_returns_above_target = np.sum(returns >= target_return * coef)
+    print(f'Number of trajectories with returns above {target_return * coef}: {num_returns_above_target}')
 
 # for coef in [0, 0.1, 0.2, 0.3, 0.4,0.5, 0.6, 0.7, 0.8, 0.9, 1.0]:
 #     num_traj_above_target = np.sum(returns >= target_return * coef)

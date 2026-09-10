@@ -76,8 +76,6 @@ dataset_path ="/opt/decision-transformer-optbot/data/chart.pkl"
 with open(dataset_path, 'rb') as f:
     trajectories = pickle.load(f)
 
-env = ChartEnv.ChartEnv(chart_dict = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=False, dates_dict= env_dates_test, noise_level=1e-5)
-
 states, traj_lens, returns = [], [], []
 for traj in trajectories:
     states.append(traj['observations'])
@@ -113,7 +111,7 @@ model.load_state_dict(torch.load('/opt/decision-transformer-optbot/saved_models/
 model.to(device=device)
 model.eval()
 
-initial_target_return = 9.0
+initial_target_return = 9.
 
 curr_value_sum = 0
 port_value_sum = 0
@@ -124,6 +122,8 @@ avg_returns = []
 env = ChartEnv.ChartEnv(chart_dict = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=False, dates_dict= env_dates_test, noise_level=1e-5)
 
 return_totals = np.zeros((5,1))
+avg_lens = []
+env.index = 200000
 for target_r in range(0,20,1):
 
     state,_ = env.reset()
@@ -133,7 +133,7 @@ for target_r in range(0,20,1):
     actions = torch.zeros((0, act_dim), device=device, dtype=torch.float32)
     rewards = torch.zeros(0, device=device, dtype=torch.float32)
 
-    ep_return = 0.9
+    ep_return = 20.
     target_return = torch.tensor(ep_return, device=device, dtype=torch.float32).reshape(1, 1)
     timesteps = torch.tensor(0, device=device, dtype=torch.long).reshape(1, 1)
 
@@ -156,8 +156,7 @@ for target_r in range(0,20,1):
         action = action.detach().cpu().numpy()
 
         # for each element in the action array, if element 0.5> make 1 else 0
-        action = np.where(action > 0.5, 1, 0)
-        
+        action = np.where(action > 0.5, 1, 0)      
 
         action_array.append(action)
 
@@ -188,17 +187,21 @@ for target_r in range(0,20,1):
         #print("Predicted Return: ",returns_to_go.detach().cpu().numpy()[0], "Episode Return: ", target_return[0,-1].detach().cpu().numpy())
         episode_length += 1
         if done or trunc:
-            return_totals += np.array([info['trans_sum']]).T
+            # only add trans sum where value > -0.3 else add -0.3 for all values in info['trans_sum']
+            return_totals += np.maximum(np.asarray(info['trans_sum']), -0.3).reshape(5, 1)
             print(f"Action at step {t}: {np.round(action, 2)}")
             print(f"Index {env.index}: Step {t}, Target Episode Return: {target_r}, trans_sum: {info['trans_sum']}, trans counts: {info['total_trans']}, Current Value: {info['current_value']}")
             print(f"Current returns: {return_totals.T[0]}")
             print(f"Episode Return: {episode_return}")
             print("------------------------------------------------------------")
+            avg_lens.append(episode_length)
             break   
     
     avg_returns.append(episode_return)
     #average actions
     avg_actions, std_actions = np.round(np.mean(action_array, axis=0),2), np.round(np.std(action_array, axis=0),2)
+
+print(f"Average Lengths over 20 episodes: {np.mean(avg_lens)}")
     
 
 #print(f"Average Return over 10 episodes: {np.mean(avg_returns)}")

@@ -173,12 +173,13 @@ def experiment(
 
         return_dict = dict()
         def fn(model):
+            env = ChartEnv.ChartEnv(chart_dict = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=False, dates_dict= env_dates_test, noise_level=1e-5)
             returns, lengths, current_values = [], [], []
             for _ in range(num_eval_episodes):
                 with torch.no_grad():
                     if model_type == 'dt':
                         ret, length, current_value = evaluate_episode_rtg(
-                            ChartEnv.ChartEnv(chart_dict = env_charts, close_prices= env_close_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=True, dates_dict= env_dates, noise_level=1e-5) ,
+                            env,
                             state_dim,
                             act_dim,
                             model,
@@ -192,7 +193,7 @@ def experiment(
                         )
                     else:
                         ret, length = evaluate_episode(
-                            ChartEnv.ChartEnv(chart_dict = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=True, dates_dict= env_dates_test, noise_level=1e-5) ,
+                            env,
                             state_dim,
                             act_dim,
                             model,
@@ -225,6 +226,7 @@ def experiment(
             rcsl_current_value_table = wandb.Table(columns=["Target Return", "Mean Current Value"], allow_mixed_types=True) #Mean Current Value of episodes
 
             rc_loss = 0
+            env = ChartEnv.ChartEnv(chart_dict = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=False, dates_dict= env_dates_test, noise_level=1e-5)
             
             for eval_rtg_coef in [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]:
                 eval_rtg = target_rew * eval_rtg_coef 
@@ -232,7 +234,7 @@ def experiment(
                 current_values = []
                 for i in range(num_eval_episodes):
                     ret, length, current_value = evaluate_episode_rtg(
-                        ChartEnv.ChartEnv(chart_dict = env_test_charts, close_prices= env_close_test_prices , symbols = ['EURUSD', 'GBPUSD','USDJPY','USDCHF','AUDUSD'],timesteps = 1, episode_length = 1440, recurrent= False, random_start=True, dates_dict= env_dates_test, noise_level=1e-5),
+                        env,
                         state_dim,
                         act_dim,
                         model,
@@ -416,10 +418,16 @@ def experiment(
             interval_steps=1,
         )
 
-        study = optuna.create_study(direction='maximize',
-                                    storage="sqlite:///dt_" + variant['env'] + "-" + variant['loss_outputs'] + ".sqlite3",
-                                    study_name=variant['env']+"-Hyperparam-search-"+variant['loss_outputs'],
-                                    pruner=pruner)
+        study = optuna.create_study(
+            direction='maximize',
+            storage=variant['study_storage'],
+            study_name=variant['study_name'],
+            pruner=pruner,
+            load_if_exists=True,
+        )
+        completed_trials = len(study.trials)
+        if completed_trials:
+            print(f"Resuming Optuna study '{variant['study_name']}' with {completed_trials} existing trials.")
 
         study.optimize(
             objective,
@@ -547,6 +555,8 @@ if __name__ == '__main__':
     parser.add_argument('--num_trials', type=int, default=10) 
     parser.add_argument('--max_hp_iters', type=int, default=10) 
     parser.add_argument('--num_hp_steps_per_iter', type=int, default=10) #30 minutes each 
+    parser.add_argument('--study_storage', type=str, default=None)
+    parser.add_argument('--study_name', type=str, default=None)
     parser.add_argument('--tag', type=str, default='baseline') #HPS / baseline
     parser.add_argument('--env_targets', type=float, nargs='+', default=[2.0]) #List of target returns to evaluate on
 
@@ -554,6 +564,11 @@ if __name__ == '__main__':
     parser.add_argument('--loss_outputs', type=str, default='A') #Can be A, AS, or ASR
     
     args = parser.parse_args()
+
+    if args.study_storage is None:
+        args.study_storage = f"sqlite:///dt_{args.env}-{args.loss_outputs}.sqlite3"
+    if args.study_name is None:
+        args.study_name = f"{args.env}-Hyperparam-search-{args.loss_outputs}"
     
     project_name = 'decision-transformer-opt-experiments'
     
