@@ -548,7 +548,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_hp_iters', type=int, default=10) 
     parser.add_argument('--num_hp_steps_per_iter', type=int, default=10) #30 minutes each 
     parser.add_argument('--tag', type=str, default='baseline') #HPS / baseline
-    parser.add_argument('--env_targets', type=float, nargs='+', default=[1.0]) #List of target returns to evaluate on
+    parser.add_argument('--env_targets', type=float, nargs='+', default=[2.0]) #List of target returns to evaluate on
 
     #Outputs
     parser.add_argument('--loss_outputs', type=str, default='A') #Can be A, AS, or ASR
