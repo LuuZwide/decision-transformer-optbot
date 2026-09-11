@@ -368,7 +368,7 @@ def experiment(
         
         model = model.to(device=device)
 
-        warmup_steps = variant['warmup_steps']
+        warmup_steps = variant['trial_warmup_steps']
         optimizer = torch.optim.AdamW( # type: ignore
         model.parameters(),
         lr=variant['learning_rate'],
@@ -552,6 +552,7 @@ if __name__ == '__main__':
 
     #Hyperparameter search iters
     parser.add_argument('--do_search', type=int, default=0) #1 True / 0 False
+    parser.add_argument('--trial_warmup_steps', type=int, default=1000) #Warmup steps for each trial    
     parser.add_argument('--num_trials', type=int, default=10) 
     parser.add_argument('--max_hp_iters', type=int, default=10) 
     parser.add_argument('--num_hp_steps_per_iter', type=int, default=10) #30 minutes each 
