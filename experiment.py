@@ -518,13 +518,28 @@ def experiment(
         )
     print("Wandb initialized.")
 
+    best_return = -float('inf')
+    best_model_path = ""
+
     for iter in range(variant['max_iters']):
         outputs, rcsl_outputs = trainer.train_iteration(num_steps=variant['num_steps_per_iter'], iter_num=iter+1, print_logs=True)
         if log_to_wandb:
             wandb.log(outputs)
             wandb.log(rcsl_outputs)
+        
+        current_return = outputs["evaluation/return_mean_gm"]
+        if current_return > best_return:
+            best_return = current_return
+            best_model_path = f"saved_models/{experiment_name}/best_model.pt"
+            save_model(trainer.model, best_model_path)
+            print(f"New best model saved with return: {best_return:.2f}")
+
         save_model(trainer.model, f"saved_models/{experiment_name}/iter_{iter+1}")
+
         print(f"Finished iteration {iter+1}")
+
+    if best_model_path:
+        print(f"Training complete. Best model saved to {best_model_path} with return: {best_return:.2f}")
 
 
 
