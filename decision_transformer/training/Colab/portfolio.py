@@ -20,8 +20,8 @@ class portfolio():
       self.total_trans = dict.fromkeys(symbols, 0.0)
       self.trans_sum = dict.fromkeys(symbols, 0.0)
       self.bought_values = dict.fromkeys(symbols, 0.0)
-      self.b_counter = 0.0
-      self.s_counter = 0.0
+      self.b_counter = 0.5
+      self.s_counter = 0.5
       self.n_counter = 0.0
       self.stop_loss = -0.1
       self.selling_values =dict.fromkeys(symbols, 0)
@@ -153,7 +153,7 @@ class portfolio():
     sum_port_changes = np.sum(active_changes) if active_changes else 0
     current_value = self.value * (1 + sum_port_changes + realized_port_change)
     self.value *= (1 + realized_port_change)
-    reward = 100 * np.log( self.current_value/ self.prev_current_value)
+    reward = 100 * np.log( self.value/ self.prev_value)
 
     reward = np.tanh(reward)
 
