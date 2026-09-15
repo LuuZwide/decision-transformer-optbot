@@ -124,7 +124,7 @@ def evaluate_episode_rtg(
         action = action.detach().cpu().numpy()
 
         # for each element in the action array, if element 0.5> make 1 else 0
-        action = torch.where(torch.tensor(action) > 0.5, torch.tensor(1.0), torch.tensor(0.0)).numpy()
+        #action = torch.where(torch.tensor(action) > 0.5, torch.tensor(1.0), torch.tensor(0.0)).numpy()
         avg_actions.append(action)
 
         state, reward, done, trunc, info = env.step(action)

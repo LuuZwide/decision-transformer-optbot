@@ -107,11 +107,11 @@ model = DecisionTransformer(
 
 max_length = 20
 
-model.load_state_dict(torch.load('/opt/decision-transformer-optbot/saved_models/DT', map_location=device, weights_only=True))
+model.load_state_dict(torch.load('/opt/decision-transformer-optbot/saved_models/best_model.pt', map_location=device, weights_only=True))
 model.to(device=device)
 model.eval()
 
-initial_target_return = 9.
+initial_target_return = 2.
 
 curr_value_sum = 0
 port_value_sum = 0

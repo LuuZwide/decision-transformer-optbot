@@ -18,7 +18,22 @@ for path in trajectories:
     returns.append(path['rewards'].sum())
     average_step_reward.extend(path['rewards'])
 
+#for path in trajectories:
+#    sum = path['rewards'].sum()
+#    if sum > -0.1:
+#        actions.append(path['actions'])
+#        states.append(path['observations'])
+#        traj_lens.append(len(path['observations']))
+#        returns.append(sum)
+#        average_step_reward.extend(path['rewards'])
+#        average_step_reward.extend(path['rewards'])
+
+
 traj_lens, returns = np.array(traj_lens), np.array(returns)  
+states = np.concatenate(states, axis=0)
+state_mean, state_std = np.mean(states, axis=0), np.std(states, axis=0) + 1e-6
+
+print(f"state_mean: {state_mean}, state_std: {state_std}")
 
 #obersvation and action shapes
 print(f'Observation shape: {states[0].shape}, Action shape: {actions[0].shape}')

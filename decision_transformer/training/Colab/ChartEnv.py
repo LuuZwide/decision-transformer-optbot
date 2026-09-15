@@ -160,7 +160,7 @@ class ChartEnv(gym.Env):
     if(self.counter == self.episode_length) or (self.current_value < self.threshold):
       for symbol in self.symbols:
         self.portfolio.trans_sum[symbol] += self.portfolio.percentage_diff_dict[symbol]  # type: ignore
-      reward = np.tanh( 100 * np.log(self.current_value / self.portfolio.value))
+      #reward = np.tanh( 100 * np.log(self.current_value / self.portfolio.value))
 
       if (self.counter == self.episode_length):
         trunc = True
